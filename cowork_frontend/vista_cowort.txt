@@ -1,7 +1,0 @@
-Hola, estoy creando la aplicacion web.
-
-Voy a implementar una mejora.
-
-Ahora voy a desarrollar la vista responsiva en el branch dev.
-
-Sigo avanzando en mi proyecto.
