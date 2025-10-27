@@ -14,3 +14,21 @@ CREATE TABLE workspaces (
     user_id INT REFERENCES users(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+# DDL for Reservations Table
+CREATE TABLE reservations (
+    id SERIAL PRIMARY KEY,
+    workspace_id INT REFERENCES workspaces(id),
+    user_id INT REFERENCES users(id),
+    reservation_date DATE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+# DDL for Payments Table
+CREATE TABLE payments (
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id),       
+    reservation_id INT REFERENCES reservations(id),
+    amount DECIMAL(10, 2) NOT NULL,
+    payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
