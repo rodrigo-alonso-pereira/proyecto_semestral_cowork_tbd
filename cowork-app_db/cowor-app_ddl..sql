@@ -41,4 +41,11 @@ CREATE TABLE reviews (
     rating INT CHECK (rating >= 1 AND rating <= 5),
     comment TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+
+# DDL for Amenities Table
+CREATE TABLE amenities (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT
 );
