@@ -25,7 +25,7 @@ CREATE TABLE reservations (
 );
 
 # DDL for Payments Table
-CREATE TABLE payments (
+CREATE TABLE payment_dates (
     id SERIAL PRIMARY KEY,
     user_id INT REFERENCES users(id),       
     reservation_id INT REFERENCES reservations(id),
