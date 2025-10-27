@@ -49,3 +49,10 @@ CREATE TABLE amenities (
     name VARCHAR(100) NOT NULL,
     description TEXT
 );
+
+# DDL for Workspace Amenities Table
+CREATE TABLE workspace_amenities (
+    workspace_id INT REFERENCES workspaces(id),
+    amenity_id INT REFERENCES amenities(id),
+    PRIMARY KEY (workspace_id, amenity_id)
+);
