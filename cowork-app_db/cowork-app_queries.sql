@@ -1,3 +1,10 @@
+select * from recurso;
+select * from estado_recurso;
+select * from tipo_recurso;
+select * from reserva;
+select * from usuario;
+select * from tipo_usuario;
+
 -- 1. Usuarios con Plan y Horas Restantes (Asumiendo que Tiempo_usado se actualiza)
 SELECT
     u.Nombre AS Cliente,
