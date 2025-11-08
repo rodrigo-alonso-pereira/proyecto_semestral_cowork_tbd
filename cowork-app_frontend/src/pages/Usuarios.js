@@ -23,8 +23,10 @@ export default function Usuarios() {
 
   // Cargar datos simulados
   useEffect(() => {
-    setUsuarios(usuariosData);
-  }, []);
+    // Solo cargar usuarios activos (activo = true)
+    const activos = usuariosData.filter(u => u.activo === true);
+    setUsuarios(activos);
+    }, []);
 
   // Manejo de formulario
   const handleChange = (e) => {
@@ -74,7 +76,11 @@ export default function Usuarios() {
   };
 
   const confirmDelete = () => {
-    setUsuarios(usuarios.filter((u) => u.id !== selectedUser.id));
+    setUsuarios(
+    usuarios.map(u =>
+        u.id === selectedUser.id ? { ...u, activo: false } : u
+    )
+    );
     setShowDelete(false);
     setSelectedUser(null);
   };
