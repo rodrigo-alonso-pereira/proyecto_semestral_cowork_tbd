@@ -124,11 +124,10 @@ CREATE TABLE Estado_Reserva (
 -- Table: Reserva
 CREATE TABLE Reserva (
     Id BIGSERIAL PRIMARY KEY,
-    Hora_inicio TIME NOT NULL,
-    Hora_termino TIME NOT NULL,
-    Estado BOOLEAN DEFAULT TRUE,
-    Fecha_reserva DATE NOT NULL DEFAULT CURRENT_DATE,
-    Valor_reserva BIGINT NOT NULL CHECK (Valor_reserva >= 0),
+    Inicio_reserva TIMESTAMP NOT NULL,
+    Termino_reserva TIMESTAMP NOT NULL,
+    Fecha_creacion DATE NOT NULL DEFAULT CURRENT_DATE,
+    Valor BIGINT NOT NULL CHECK (Valor >= 0),
     Usuario_id BIGINT NOT NULL,
     Recurso_id BIGINT NOT NULL,
     Estado_reserva_id BIGINT NOT NULL,
