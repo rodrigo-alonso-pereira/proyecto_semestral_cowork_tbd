@@ -22,21 +22,23 @@ CREATE TABLE Plan (
     Nombre VARCHAR(200) NOT NULL,
     Precio_mensual BIGINT NOT NULL CHECK (Precio_mensual >= 0),
     Tiempo_incluido INT NOT NULL CHECK (Tiempo_incluido >= 0),
-    Tiempo_usado INT DEFAULT 0 CHECK (Tiempo_usado >= 0)
+    Activo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 
 -- Table: Estado_Usuario
 CREATE TABLE Estado_Usuario (
     Id BIGSERIAL PRIMARY KEY,
-    Nombre VARCHAR(200) NOT NULL UNIQUE
+    Nombre VARCHAR(200) NOT NULL UNIQUE,
+    Activo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 
 -- Table: Tipo_Usuario
 CREATE TABLE Tipo_Usuario (
     Id BIGSERIAL PRIMARY KEY,
-    Nombre VARCHAR(200) NOT NULL UNIQUE
+    Nombre VARCHAR(200) NOT NULL UNIQUE,
+    Activo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 
@@ -85,13 +87,15 @@ CREATE TABLE Factura (
 -- Table: Tipo_Recurso
 CREATE TABLE Tipo_Recurso (
     Id BIGSERIAL PRIMARY KEY,
-    Nombre VARCHAR(200) NOT NULL UNIQUE
+    Nombre VARCHAR(200) NOT NULL UNIQUE,
+    Activo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 -- Table: Estado_Recurso
 CREATE TABLE Estado_Recurso (
     Id BIGSERIAL PRIMARY KEY,
-    Nombre VARCHAR(200) NOT NULL UNIQUE
+    Nombre VARCHAR(200) NOT NULL UNIQUE,
+    Activo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 -- Table: Recurso
