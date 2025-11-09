@@ -57,10 +57,11 @@ CREATE TABLE Usuario (
     CONSTRAINT fk_usuario_plan FOREIGN KEY (Plan_id) REFERENCES Plan(Id)
 );
 
--- Table: Usuario_Estado_Usuario (Historial de Estados)
-CREATE TABLE Usuario_Estado_Usuario (
+-- Table: Historial_Estado_Usuario
+CREATE TABLE Historial_Estado_Usuario (
     Id BIGSERIAL PRIMARY KEY,
     Usuario_id BIGINT NOT NULL,
+    Fecha_cambio_estado DATE NOT NULL DEFAULT CURRENT_DATE,
     Estado_usuario_id BIGINT NOT NULL,
     CONSTRAINT fk_historial_usuario FOREIGN KEY (Usuario_id) REFERENCES Usuario(Id),
     CONSTRAINT fk_historial_estado_usuario FOREIGN KEY (Estado_usuario_id) REFERENCES Estado_Usuario(Id)
@@ -116,12 +117,24 @@ CREATE TABLE Reserva (
     Valor_reserva BIGINT NOT NULL CHECK (Valor_reserva >= 0),
     Usuario_id BIGINT NOT NULL,
     Recurso_id BIGINT NOT NULL,
-    CONSTRAINT chk_hora_reserva CHECK (Hora_termino > Hora_inicio),
-    CONSTRAINT fk_reserva_usuario FOREIGN KEY (Usuario_id)
-        REFERENCES Usuario(Id) ON DELETE CASCADE,
-    CONSTRAINT fk_reserva_recurso FOREIGN KEY (Recurso_id)
-        REFERENCES Recurso(Id) ON DELETE CASCADE
+    Estado_reserva_id BIGINT NOT NULL,
     CONSTRAINT fk_reserva_usuario FOREIGN KEY (Usuario_id) REFERENCES Usuario(Id),
     CONSTRAINT fk_reserva_recurso FOREIGN KEY (Recurso_id) REFERENCES Recurso(Id),
     CONSTRAINT fk_reserva_estado FOREIGN KEY (Estado_reserva_id) REFERENCES Estado_Reserva(Id),
+    -- Reserva debe terminar después de iniciar
+    CONSTRAINT chk_periodo_reserva CHECK (Termino_reserva > Inicio_reserva),
+    -- Reserva debe ser al menos de 1 hora
+    CONSTRAINT chk_minimo_1_hora CHECK (EXTRACT(EPOCH FROM (Termino_reserva - Inicio_reserva)) >= 3600),
+    -- Reserva solo en días hábiles (lunes a viernes)
+    CONSTRAINT chk_dias_habiles CHECK (EXTRACT(DOW FROM Inicio_reserva) BETWEEN 1 AND 5),
+    -- Reserva deben ser en horario de oficina (09:00 a 21:00)
+    CONSTRAINT chk_horario_oficina CHECK (
+        EXTRACT(HOUR FROM Inicio_reserva) BETWEEN 9 AND 20
+        AND EXTRACT(HOUR FROM Termino_reserva) BETWEEN 10 AND 21),
+    -- Reserva deben empezar y terminan en "hora completa" (ej. 09:00, 14:00)
+    CONSTRAINT chk_hora_completa CHECK (
+        EXTRACT(MINUTE FROM Inicio_reserva) = 0
+        AND EXTRACT(SECOND FROM Inicio_reserva) = 0
+        AND EXTRACT(MINUTE FROM Termino_reserva) = 0
+        AND EXTRACT(SECOND FROM Termino_reserva) = 0)
 );
