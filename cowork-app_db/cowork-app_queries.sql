@@ -1,9 +1,15 @@
-select * from recurso;
+select * from estado_factura;
+select * from estado_reserva;
 select * from estado_recurso;
+select * from estado_usuario;
 select * from tipo_recurso;
-select * from reserva;
-select * from usuario;
 select * from tipo_usuario;
+select * from plan;
+select * from factura;
+select * from historial_estado_usuario;
+select * from usuario;
+select * from recurso;
+select * from reserva;
 
 -- 1. Usuarios con Plan y Horas Restantes (Asumiendo que Tiempo_usado se actualiza)
 SELECT
