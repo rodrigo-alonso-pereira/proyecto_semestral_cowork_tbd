@@ -114,6 +114,13 @@ CREATE TABLE Recurso (
     CONSTRAINT fk_recurso_estado FOREIGN KEY (Estado_recurso_id) REFERENCES Estado_Recurso(Id)
 );
 
+-- Table: Estado_Reserva
+CREATE TABLE Estado_Reserva (
+    Id BIGSERIAL PRIMARY KEY,
+    Nombre VARCHAR(200) NOT NULL UNIQUE,
+    Activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
 -- Table: Reserva
 CREATE TABLE Reserva (
     Id BIGSERIAL PRIMARY KEY,
