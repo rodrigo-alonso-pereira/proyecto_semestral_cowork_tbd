@@ -79,9 +79,9 @@ CREATE TABLE Factura (
     Id BIGSERIAL PRIMARY KEY,
     Numero_factura BIGINT NOT NULL UNIQUE,
     Fecha_emision DATE NOT NULL DEFAULT CURRENT_DATE,
-    Estado BOOLEAN DEFAULT TRUE,
     Total BIGINT NOT NULL CHECK (Total >= 0),
     Usuario_id BIGINT NOT NULL,
+    Estado_factura_id BIGINT NOT NULL,
     CONSTRAINT fk_factura_usuario FOREIGN KEY (Usuario_id)
         REFERENCES Usuario(Id),
     CONSTRAINT fk_factura_estado FOREIGN KEY (Estado_factura_id)
