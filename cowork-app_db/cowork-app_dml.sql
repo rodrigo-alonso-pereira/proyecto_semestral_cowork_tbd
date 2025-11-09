@@ -40,8 +40,7 @@ INSERT INTO Estado_Factura (Nombre) VALUES
 INSERT INTO Estado_Reserva (Nombre) VALUES
 ('Activa'),
 ('Cancelada'),
-('Completada'),
-('No Show');
+('Completada');
 
 INSERT INTO Recurso (Nombre, Precio, Capacidad, Tipo_recurso_id, Estado_recurso_id) VALUES
 ('Hot Desk 01', 5000, 1, 1, 1),
