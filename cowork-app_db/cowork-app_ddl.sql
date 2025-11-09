@@ -67,6 +67,13 @@ CREATE TABLE Historial_Estado_Usuario (
     CONSTRAINT fk_historial_estado_usuario FOREIGN KEY (Estado_usuario_id) REFERENCES Estado_Usuario(Id)
 );
 
+-- Table: Estado_Factura
+CREATE TABLE Estado_Factura (
+    Id BIGSERIAL PRIMARY KEY,
+    Nombre VARCHAR(200) NOT NULL UNIQUE,
+    Activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
 -- Table: Factura
 CREATE TABLE Factura (
     Id BIGSERIAL PRIMARY KEY,
