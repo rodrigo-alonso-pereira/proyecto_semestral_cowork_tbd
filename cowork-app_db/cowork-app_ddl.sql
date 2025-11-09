@@ -1,5 +1,6 @@
 -- DDL Cowork-App
 
+DROP SCHEMA IF EXISTS reservas CASCADE;
 CREATE SCHEMA IF NOT EXISTS reservas;
 SET search_path TO reservas;
 
@@ -151,3 +152,4 @@ CREATE TABLE Reserva (
         AND EXTRACT(MINUTE FROM Termino_reserva) = 0
         AND EXTRACT(SECOND FROM Termino_reserva) = 0)
 );
+
