@@ -52,12 +52,9 @@ CREATE TABLE Usuario (
     Estado_usuario_id BIGINT NOT NULL,
     Tipo_usuario_id BIGINT NOT NULL,
     Plan_id BIGINT,
-    CONSTRAINT fk_usuario_estado_usuario FOREIGN KEY (Estado_usuario_id)
-        REFERENCES Estado_Usuario(Id) ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT fk_usuario_tipo_usuario FOREIGN KEY (Tipo_usuario_id)
-        REFERENCES Tipo_Usuario(Id) ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT fk_usuario_plan FOREIGN KEY (Plan_id)
-        REFERENCES Plan(Id) ON UPDATE CASCADE ON DELETE SET NULL
+    CONSTRAINT fk_usuario_estado_usuario FOREIGN KEY (Estado_usuario_id) REFERENCES Estado_Usuario(Id),
+    CONSTRAINT fk_usuario_tipo_usuario FOREIGN KEY (Tipo_usuario_id) REFERENCES Tipo_Usuario(Id),
+    CONSTRAINT fk_usuario_plan FOREIGN KEY (Plan_id) REFERENCES Plan(Id)
 );
 
 -- Table: Usuario_Estado_Usuario (Historial de Estados)
@@ -65,11 +62,8 @@ CREATE TABLE Usuario_Estado_Usuario (
     Id BIGSERIAL PRIMARY KEY,
     Usuario_id BIGINT NOT NULL,
     Estado_usuario_id BIGINT NOT NULL,
-    Fecha_cambio_estado DATE NOT NULL DEFAULT CURRENT_DATE,
-    CONSTRAINT fk_ueu_usuario FOREIGN KEY (Usuario_id)
-        REFERENCES Usuario(Id) ON DELETE CASCADE,
-    CONSTRAINT fk_ueu_estado_usuario FOREIGN KEY (Estado_usuario_id)
-        REFERENCES Estado_Usuario(Id) ON DELETE CASCADE
+    CONSTRAINT fk_historial_usuario FOREIGN KEY (Usuario_id) REFERENCES Usuario(Id),
+    CONSTRAINT fk_historial_estado_usuario FOREIGN KEY (Estado_usuario_id) REFERENCES Estado_Usuario(Id)
 );
 
 -- Table: Factura
@@ -81,7 +75,9 @@ CREATE TABLE Factura (
     Total BIGINT NOT NULL CHECK (Total >= 0),
     Usuario_id BIGINT NOT NULL,
     CONSTRAINT fk_factura_usuario FOREIGN KEY (Usuario_id)
-        REFERENCES Usuario(Id) ON DELETE CASCADE
+        REFERENCES Usuario(Id),
+    CONSTRAINT fk_factura_estado FOREIGN KEY (Estado_factura_id)
+        REFERENCES Estado_Factura(Id)
 );
 
 -- Table: Tipo_Recurso
@@ -106,10 +102,8 @@ CREATE TABLE Recurso (
     Capacidad INT NOT NULL CHECK (Capacidad > 0),
     Tipo_recurso_id BIGINT NOT NULL,
     Estado_recurso_id BIGINT NOT NULL,
-    CONSTRAINT fk_recurso_tipo FOREIGN KEY (Tipo_recurso_id)
-        REFERENCES Tipo_Recurso(Id) ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT fk_recurso_estado FOREIGN KEY (Estado_recurso_id)
-        REFERENCES Estado_Recurso(Id) ON UPDATE CASCADE ON DELETE RESTRICT
+    CONSTRAINT fk_recurso_tipo FOREIGN KEY (Tipo_recurso_id) REFERENCES Tipo_Recurso(Id),
+    CONSTRAINT fk_recurso_estado FOREIGN KEY (Estado_recurso_id) REFERENCES Estado_Recurso(Id)
 );
 
 -- Table: Reserva
@@ -127,4 +121,7 @@ CREATE TABLE Reserva (
         REFERENCES Usuario(Id) ON DELETE CASCADE,
     CONSTRAINT fk_reserva_recurso FOREIGN KEY (Recurso_id)
         REFERENCES Recurso(Id) ON DELETE CASCADE
+    CONSTRAINT fk_reserva_usuario FOREIGN KEY (Usuario_id) REFERENCES Usuario(Id),
+    CONSTRAINT fk_reserva_recurso FOREIGN KEY (Recurso_id) REFERENCES Recurso(Id),
+    CONSTRAINT fk_reserva_estado FOREIGN KEY (Estado_reserva_id) REFERENCES Estado_Reserva(Id),
 );
