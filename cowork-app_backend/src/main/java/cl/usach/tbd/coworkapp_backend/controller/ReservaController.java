@@ -130,16 +130,16 @@ public class ReservaController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-
     /**
-     * GET /api/v1/reserva/fecha-creacion/{fecha}
-     * Obtener reservas por fecha de creación (formato: yyyy-MM-dd)
+     * GET /api/v1/reserva/fecha/{fecha}
+     * Obtener reservas por fecha (busca en inicioReserva y terminoReserva)
+     * Formato: yyyy-MM-dd
      */
-    @GetMapping("/fecha-creacion/{fecha}")
-    public ResponseEntity<List<ReservaResponseDTO>> getReservasByFechaCreacion(
+    @GetMapping("/fecha/{fecha}")
+    public ResponseEntity<List<ReservaResponseDTO>> getReservasByFecha(
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
         try {
-            List<ReservaResponseDTO> reservas = reservaService.getReservasByFechaCreacion(fecha);
+            List<ReservaResponseDTO> reservas = reservaService.getReservasByFecha(fecha);
             return ResponseEntity.ok(reservas);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();

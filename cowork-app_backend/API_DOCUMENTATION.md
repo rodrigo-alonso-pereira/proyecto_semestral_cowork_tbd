@@ -26,21 +26,38 @@ El proyecto ha sido **compilado exitosamente** y está listo para usar.
 - `HistorialEstadoUsuario.java` - **[NUEVO]** Auditoría de cambios de estado de usuarios
 
 ### DTOs (Data Transfer Objects)
+
+#### Reserva:
 - `ReservaResponseDTO.java` - DTO para respuestas de reservas (con `LocalDateTime` y estado de reserva)
 - `ReservaCreateDTO.java` - DTO para crear nuevas reservas (requiere `estadoReservaId`)
 - `ReservaUpdateDTO.java` - DTO para actualizar reservas existentes
 
+#### Recurso:
+- `RecursoResponseDTO.java` - DTO para respuestas de recursos (incluye tipo y estado)
+- `RecursoCreateDTO.java` - DTO para crear nuevos recursos
+- `RecursoUpdateDTO.java` - DTO para actualizar recursos existentes
+
 ### Repositories
+
+#### Repositorios de Reserva:
 - `ReservaRepository.java` - Repositorio con métodos de consulta personalizados
 - `EstadoReservaRepository.java` - **[NUEVO]** Repositorio para estados de reserva
+
+#### Repositorios de Recurso:
+- `RecursoRepository.java` - Repositorio con métodos de búsqueda por tipo, estado, nombre y capacidad
+- `EstadoRecursoRepository.java` - **[NUEVO]** Repositorio para estados de recurso
+- `TipoRecursoRepository.java` - **[NUEVO]** Repositorio para tipos de recurso
+
+#### Otros Repositorios:
 - `UsuarioRepository.java` - Repositorio para usuarios
-- `RecursoRepository.java` - Repositorio para recursos
 
 ### Service Layer
 - `ReservaService.java` - Lógica de negocio para el CRUD de reservas
+- `RecursoService.java` - **[NUEVO]** Lógica de negocio para el CRUD de recursos
 
 ### Controller Layer
-- `ReservaController.java` - **Controlador REST principal**
+- `ReservaController.java` - Controlador REST para reservas
+- `RecursoController.java` - **[NUEVO]** Controlador REST para recursos
 
 ---
 
@@ -284,14 +301,16 @@ Response: 200 OK (lista vacía si no hay reservas con ese estado)
 
 **Estados comunes:**
 - `1` - Activa
-- `2` - Completada
-- `3` - Cancelada
+- `2` - Cancelada
+- `3` - Completada
 
-### 9. **GET** `/api/v1/reserva/fecha-creacion/{fecha}`
-Obtener reservas por fecha de creación (formato: yyyy-MM-dd)
+### 9. **GET** `/api/v1/reserva/fecha/{fecha}`
+Obtener reservas por fecha de la reserva (formato: yyyy-MM-dd)
+
+**Busca reservas donde la fecha proporcionada coincida con la fecha de inicio o término de la reserva**
 
 ```json
-Ejemplo: GET /api/v1/reserva/fecha-creacion/2025-11-10
+Ejemplo: GET /api/v1/reserva/fecha/2025-11-10
 
 Response: 200 OK
 [
@@ -299,7 +318,7 @@ Response: 200 OK
     "id": 1,
     "inicioReserva": "2025-11-10T10:00:00",
     "terminoReserva": "2025-11-10T12:00:00",
-    "fechaCreacion": "2025-11-10",
+    "fechaCreacion": "2025-11-09",
     "valor": 50000,
     "usuarioId": 1,
     "usuarioNombre": "Juan Pérez",
@@ -310,9 +329,9 @@ Response: 200 OK
   },
   {
     "id": 2,
-    "inicioReserva": "2025-11-11T14:00:00",
-    "terminoReserva": "2025-11-11T16:00:00",
-    "fechaCreacion": "2025-11-10",
+    "inicioReserva": "2025-11-10T14:00:00",
+    "terminoReserva": "2025-11-10T16:00:00",
+    "fechaCreacion": "2025-11-09",
     "valor": 60000,
     "usuarioId": 1,
     "usuarioNombre": "Juan Pérez",
@@ -327,78 +346,208 @@ Response: 200 OK (lista vacía si no hay reservas en esa fecha)
 []
 ```
 
+**Nota:** Este endpoint busca reservas cuyo `inicioReserva` O `terminoReserva` coincidan con la fecha proporcionada.
+
 ---
 
-## 📊 Estructura de Datos para Frontend
+## 🔌 Endpoints de Recurso
 
-### ReservaResponseDTO (Objeto de Respuesta)
-```typescript
-interface ReservaResponseDTO {
-  id: number;                      // ID único de la reserva
-  inicioReserva: string;           // Formato ISO 8601: "2025-11-10T10:00:00"
-  terminoReserva: string;          // Formato ISO 8601: "2025-11-10T12:00:00"
-  fechaCreacion: string;           // Formato ISO: "2025-11-10"
-  valor: number;                   // Valor en pesos chilenos (ej: 50000)
-  usuarioId: number;               // ID del usuario que reservó
-  usuarioNombre: string;           // Nombre completo del usuario
-  recursoId: number;               // ID del recurso reservado
-  recursoNombre: string;           // Nombre del recurso
-  estadoReservaId: number;         // ID del estado (1=Activa, 2=Completada, 3=Cancelada)
-  estadoReservaNombre: string;     // Nombre del estado ("Activa", "Cancelada", etc.)
-}
+### Base URL: `/api/v1/recurso`
+
+### 1. **GET** `/api/v1/recurso`
+Obtener todos los recursos
+```json
+Response: 200 OK
+[
+  {
+    "id": 1,
+    "nombre": "Sala de Reuniones A",
+    "precio": 50000,
+    "capacidad": 10,
+    "tipoRecursoId": 1,
+    "tipoRecursoNombre": "Sala de Reuniones",
+    "estadoRecursoId": 1,
+    "estadoRecursoNombre": "Disponible"
+  }
+]
 ```
 
-### ReservaCreateDTO (Crear Reserva)
-```typescript
-interface ReservaCreateDTO {
-  inicioReserva: string;           // Formato ISO 8601: "2025-11-10T10:00:00"
-  terminoReserva: string;          // Formato ISO 8601: "2025-11-10T12:00:00"
-  valor: number;                   // Valor en pesos chilenos
-  usuarioId: number;               // ID del usuario
-  recursoId: number;               // ID del recurso
-  estadoReservaId: number;         // ID del estado (típicamente 1 para "Activa")
+### 2. **GET** `/api/v1/recurso/{id}`
+Obtener un recurso por ID
+```json
+Response: 200 OK
+{
+  "id": 1,
+  "nombre": "Sala de Reuniones A",
+  "precio": 50000,
+  "capacidad": 10,
+  "tipoRecursoId": 1,
+  "tipoRecursoNombre": "Sala de Reuniones",
+  "estadoRecursoId": 1,
+  "estadoRecursoNombre": "Disponible"
 }
+
+Response: 404 NOT FOUND (recurso no existe)
 ```
 
-### ReservaUpdateDTO (Actualizar Reserva)
-```typescript
-interface ReservaUpdateDTO {
-  inicioReserva?: string;          // Opcional - Formato ISO 8601
-  terminoReserva?: string;         // Opcional - Formato ISO 8601
-  valor?: number;                  // Opcional
-  estadoReservaId?: number;        // Opcional
-  usuarioId?: number;              // Opcional
-  recursoId?: number;              // Opcional
+### 3. **POST** `/api/v1/recurso`
+Crear un nuevo recurso
+```json
+Request Body:
+{
+  "nombre": "Sala de Reuniones A",
+  "precio": 50000,
+  "capacidad": 10,
+  "tipoRecursoId": 1,
+  "estadoRecursoId": 1
 }
+
+Response: 201 CREATED (recurso creado exitosamente)
+Response: 400 BAD REQUEST (datos inválidos)
 ```
 
-### Notas Importantes para Frontend:
+**Validaciones:**
+- El nombre es obligatorio y no puede estar vacío
+- El precio debe ser >= 0
+- La capacidad debe ser > 0
+- TipoRecurso y EstadoRecurso deben existir
 
-1. **Fechas y Horas:**
-   - Todas las fechas/horas se envían y reciben en formato ISO 8601
-   - `inicioReserva` y `terminoReserva` son LocalDateTime: `"2025-11-10T10:00:00"`
-   - `fechaCreacion` es LocalDate: `"2025-11-10"`
+### 4. **PUT** `/api/v1/recurso/{id}`
+Actualizar un recurso existente
+```json
+Request Body:
+{
+  "nombre": "Sala de Reuniones B",
+  "precio": 60000,
+  "capacidad": 15,
+  "tipoRecursoId": 2,
+  "estadoRecursoId": 2
+}
 
-2. **Valores Numéricos:**
-   - `valor` es un número entero (Long en Java) sin decimales
-   - Representa pesos chilenos: `50000` = $50.000 CLP
+Response: 200 OK (recurso actualizado)
+Response: 404 NOT FOUND (recurso no existe)
+```
 
-3. **Estados de Reserva:**
-   - Los estados se manejan mediante IDs numéricos
-   - Se recomienda obtener el catálogo de estados al cargar la aplicación
-   - Estados comunes: 1=Activa, 2=Completada, 3=Cancelada
+**Nota:** Todos los campos son opcionales en el update.
 
-4. **Respuestas de Lista:**
-   - Todos los endpoints GET que retornan múltiples reservas devuelven un array
-   - Si no hay resultados, se retorna un array vacío `[]`
-   - Nunca retorna `null`
+### 5. **DELETE** `/api/v1/recurso/{id}`
+**Eliminar un recurso (Borrado Lógico)**
 
-5. **Manejo de Errores:**
-   - Código 200: Operación exitosa
-   - Código 201: Recurso creado exitosamente
-   - Código 404: Recurso no encontrado
-   - Código 400: Datos inválidos
-   - Código 500: Error del servidor
+⚠️ **IMPORTANTE:** Este endpoint NO elimina físicamente el recurso. En su lugar, cambia el estado a "Inactivo".
+
+```json
+Response: 200 OK
+{
+  "id": 1,
+  "nombre": "Sala de Reuniones A",
+  "precio": 50000,
+  "capacidad": 10,
+  "tipoRecursoId": 1,
+  "tipoRecursoNombre": "Sala de Reuniones",
+  "estadoRecursoId": 2,
+  "estadoRecursoNombre": "Inactivo"
+}
+
+Response: 404 NOT FOUND (recurso no existe)
+```
+
+### 6. **GET** `/api/v1/recurso/tipo/{tipoRecursoId}`
+Obtener recursos por tipo de recurso
+```json
+Ejemplo: GET /api/v1/recurso/tipo/1
+
+Response: 200 OK
+[
+  {
+    "id": 1,
+    "nombre": "Sala de Reuniones A",
+    "precio": 50000,
+    "capacidad": 10,
+    "tipoRecursoId": 1,
+    "tipoRecursoNombre": "Sala de Reuniones",
+    "estadoRecursoId": 1,
+    "estadoRecursoNombre": "Disponible"
+  }
+]
+```
+
+### 7. **GET** `/api/v1/recurso/estado/{estadoRecursoId}`
+Obtener recursos por estado
+```json
+Ejemplo: GET /api/v1/recurso/estado/1
+
+Response: 200 OK (array de recursos con ese estado)
+```
+
+**Estados comunes:**
+- `1` - Disponible
+- `2` - Inactivo
+- `3` - Mantenimiento
+- `4` - Ocupado
+
+### 8. **GET** `/api/v1/recurso/nombre/{nombre}`
+Buscar recursos por nombre (búsqueda parcial, case-insensitive)
+```json
+Ejemplo: GET /api/v1/recurso/nombre/sala
+
+Response: 200 OK
+[
+  {
+    "id": 1,
+    "nombre": "Sala de Reuniones A",
+    "precio": 50000,
+    "capacidad": 10,
+    "tipoRecursoId": 1,
+    "tipoRecursoNombre": "Sala de Reuniones",
+    "estadoRecursoId": 1,
+    "estadoRecursoNombre": "Disponible"
+  },
+  {
+    "id": 2,
+    "nombre": "Sala de Reuniones B",
+    "precio": 60000,
+    "capacidad": 15,
+    "tipoRecursoId": 1,
+    "tipoRecursoNombre": "Sala de Reuniones",
+    "estadoRecursoId": 1,
+    "estadoRecursoNombre": "Disponible"
+  }
+]
+```
+
+**Nota:** Búsqueda case-insensitive. "sala" encuentra "Sala de Reuniones A", "SALA B", etc.
+
+### 9. **GET** `/api/v1/recurso/capacidad/{capacidad}`
+Obtener recursos con capacidad mayor o igual a la especificada
+```json
+Ejemplo: GET /api/v1/recurso/capacidad/10
+
+Response: 200 OK
+[
+  {
+    "id": 1,
+    "nombre": "Sala de Reuniones A",
+    "precio": 50000,
+    "capacidad": 10,
+    "tipoRecursoId": 1,
+    "tipoRecursoNombre": "Sala de Reuniones",
+    "estadoRecursoId": 1,
+    "estadoRecursoNombre": "Disponible"
+  },
+  {
+    "id": 2,
+    "nombre": "Sala de Reuniones B",
+    "precio": 60000,
+    "capacidad": 15,
+    "tipoRecursoId": 1,
+    "tipoRecursoNombre": "Sala de Reuniones",
+    "estadoRecursoId": 1,
+    "estadoRecursoNombre": "Disponible"
+  }
+]
+```
+
+**Nota:** Útil para encontrar recursos que acomoden un número mínimo de personas.
 
 ---
 
@@ -471,38 +620,65 @@ curl -X GET http://localhost:8060/api/v1/reserva/usuario/1
 curl -X GET http://localhost:8060/api/v1/reserva/estado-reserva/1
 ```
 
----
+**Buscar reservas por fecha:**
+```bash
+curl -X GET http://localhost:8060/api/v1/reserva/fecha/2025-11-10
+```
 
-## 🧪 Probar la API
+### Ejemplos para Recurso:
 
-### Con curl:
-1. **LocalDateTime en lugar de LocalTime + LocalDate separados**
-   - `horaInicio` + `fechaReserva` → `inicioReserva` (LocalDateTime)
-   - `horaTermino` → `terminoReserva` (LocalDateTime)
+**Obtener todos los recursos:**
+```bash
+curl -X GET http://localhost:8060/api/v1/recurso
+```
 
-2. **Estado mediante tabla de catálogo**
-   - `estado` (Boolean) → `estadoReserva` (ManyToOne con EstadoReserva)
-   - Permite estados como: Activa, Cancelada, Completada, etc.
+**Crear un recurso:**
+```bash
+curl -X POST http://localhost:8060/api/v1/recurso \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre": "Sala de Reuniones A",
+    "precio": 50000,
+    "capacidad": 10,
+    "tipoRecursoId": 1,
+    "estadoRecursoId": 1
+  }'
+```
 
-3. **Auditoría mejorada**
-   - Nuevo campo `fechaCreacion` para rastrear cuándo se creó la reserva
+**Actualizar un recurso:**
+```bash
+curl -X PUT http://localhost:8060/api/v1/recurso/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "precio": 60000,
+    "capacidad": 15
+  }'
+```
 
-4. **Renombrado de campos**
-   - `valorReserva` → `valor`
+**Eliminar recurso (borrado lógico):**
+```bash
+curl -X DELETE http://localhost:8060/api/v1/recurso/1
+```
 
-5. **Borrado Lógico**
-   - DELETE no elimina físicamente la reserva
-   - Cambia el estado a "Cancelada" y retorna la reserva actualizada
+**Buscar recursos por tipo:**
+```bash
+curl -X GET http://localhost:8060/api/v1/recurso/tipo/1
+```
 
-### Nuevas Entidades:
-- **EstadoReserva**: Gestión de estados de reservas mediante catálogo
-- **Factura**: Sistema de facturación para usuarios
-- **EstadoFactura**: Estados de facturas (Pagada, Pendiente, etc.)
-- **HistorialEstadoUsuario**: Auditoría de cambios de estado de usuarios
+**Buscar recursos por estado:**
+```bash
+curl -X GET http://localhost:8060/api/v1/recurso/estado/1
+```
 
-### Cambios en Plan:
-- Agregado campo `activo` para soft delete
-- Removido campo `tiempoUsado`
+**Buscar recursos por nombre:**
+```bash
+curl -X GET http://localhost:8060/api/v1/recurso/nombre/sala
+```
+
+**Buscar recursos por capacidad mínima:**
+```bash
+curl -X GET http://localhost:8060/api/v1/recurso/capacidad/10
+```
 
 ---
 
@@ -522,12 +698,18 @@ curl -X GET http://localhost:8060/api/v1/reserva/estado-reserva/1
 ## ⚠️ Requisitos Previos
 
 1. **Base de datos PostgreSQL** configurada con el esquema `reservas`
+
 2. **Estados de Reserva** en la base de datos:
-   - Debe existir un estado llamado "Cancelada" para el borrado lógico
+   - Debe existir un estado llamado "Cancelada" para el borrado lógico de reservas
    - Recomendado: "Activa", "Cancelada", "Completada"
-3. **Datos de prueba** cargados (usuarios, recursos, planes, etc.)
+
+3. **Estados de Recurso** en la base de datos:
+   - Debe existir un estado llamado "Inactivo" para el borrado lógico de recursos
+   - Recomendado: "Disponible", "Inactivo", "Mantenimiento", "Ocupado"
+
+4. **Tipos de Recurso** en la base de datos:
+   - Al menos 1 tipo de recurso (ej: "Sala de Reuniones", "Escritorio", "Sala de Conferencias")
+
+5. **Datos de prueba** cargados (usuarios, recursos, planes, etc.)
 
 ---
-
-¡El API REST del Sistema de Reservas está completo y listo para producción! 🎉
-

@@ -158,6 +158,13 @@ public class ReservaService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public List<ReservaResponseDTO> getReservasByFecha(LocalDate fecha) {
+        return reservaRepository.findByFechaReserva(fecha).stream()
+                .map(this::convertToResponseDTO)
+                .collect(Collectors.toList());
+    }
+
     private ReservaResponseDTO convertToResponseDTO(Reserva reserva) {
         ReservaResponseDTO dto = new ReservaResponseDTO();
         dto.setId(reserva.getId());

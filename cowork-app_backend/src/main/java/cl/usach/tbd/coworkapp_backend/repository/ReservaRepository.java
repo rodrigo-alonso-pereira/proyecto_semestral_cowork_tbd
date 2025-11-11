@@ -18,6 +18,9 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
 
     List<Reserva> findByFechaCreacion(LocalDate fechaCreacion);
 
+    @Query("SELECT r FROM Reserva r WHERE DATE(r.inicioReserva) = :fecha OR DATE(r.terminoReserva) = :fecha")
+    List<Reserva> findByFechaReserva(@Param("fecha") LocalDate fecha);
+
     @Query("SELECT r FROM Reserva r WHERE r.recurso.id = :recursoId " +
            "AND DATE(r.inicioReserva) = :fecha")
     List<Reserva> findByRecursoAndFecha(@Param("recursoId") Long recursoId,
