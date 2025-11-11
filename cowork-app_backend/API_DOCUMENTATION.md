@@ -37,6 +37,11 @@ El proyecto ha sido **compilado exitosamente** y está listo para usar.
 - `RecursoCreateDTO.java` - DTO para crear nuevos recursos
 - `RecursoUpdateDTO.java` - DTO para actualizar recursos existentes
 
+#### Usuario:
+- `UsuarioResponseDTO.java` - DTO para respuestas de usuarios (sin password, incluye estado, tipo y plan)
+- `UsuarioCreateDTO.java` - DTO para crear nuevos usuarios
+- `UsuarioUpdateDTO.java` - DTO para actualizar usuarios existentes
+
 ### Repositories
 
 #### Repositorios de Reserva:
@@ -48,16 +53,22 @@ El proyecto ha sido **compilado exitosamente** y está listo para usar.
 - `EstadoRecursoRepository.java` - **[NUEVO]** Repositorio para estados de recurso
 - `TipoRecursoRepository.java` - **[NUEVO]** Repositorio para tipos de recurso
 
-#### Otros Repositorios:
-- `UsuarioRepository.java` - Repositorio para usuarios
+#### Repositorios de Usuario:
+- `UsuarioRepository.java` - Repositorio con métodos de búsqueda por RUT, email, estado, tipo, plan y nombre
+- `EstadoUsuarioRepository.java` - **[NUEVO]** Repositorio para estados de usuario
+- `TipoUsuarioRepository.java` - **[NUEVO]** Repositorio para tipos de usuario
+- `PlanRepository.java` - **[NUEVO]** Repositorio para planes
+- `HistorialEstadoUsuarioRepository.java` - **[NUEVO]** Repositorio para historial de cambios de estado
 
 ### Service Layer
 - `ReservaService.java` - Lógica de negocio para el CRUD de reservas
 - `RecursoService.java` - **[NUEVO]** Lógica de negocio para el CRUD de recursos
+- `UsuarioService.java` - **[NUEVO]** Lógica de negocio para el CRUD de usuarios (incluye registro de historial)
 
 ### Controller Layer
 - `ReservaController.java` - Controlador REST para reservas
 - `RecursoController.java` - **[NUEVO]** Controlador REST para recursos
+- `UsuarioController.java` - **[NUEVO]** Controlador REST para usuarios
 
 ---
 
@@ -551,6 +562,243 @@ Response: 200 OK
 
 ---
 
+## 🔌 Endpoints de Usuario
+
+### Base URL: `/api/v1/usuario`
+
+### 1. **GET** `/api/v1/usuario`
+Obtener todos los usuarios
+```json
+Response: 200 OK
+[
+  {
+    "id": 1,
+    "rut": "12345678-9",
+    "nombre": "Juan Pérez",
+    "email": "juan@example.com",
+    "estadoUsuarioId": 1,
+    "estadoUsuarioNombre": "Activo",
+    "tipoUsuarioId": 1,
+    "tipoUsuarioNombre": "Usuario Regular",
+    "planId": 1,
+    "planNombre": "Plan Básico"
+  }
+]
+```
+
+**Nota:** El password NO se retorna por seguridad.
+
+### 2. **GET** `/api/v1/usuario/{id}`
+Obtener un usuario por ID
+```json
+Response: 200 OK
+{
+  "id": 1,
+  "rut": "12345678-9",
+  "nombre": "Juan Pérez",
+  "email": "juan@example.com",
+  "estadoUsuarioId": 1,
+  "estadoUsuarioNombre": "Activo",
+  "tipoUsuarioId": 1,
+  "tipoUsuarioNombre": "Usuario Regular",
+  "planId": 1,
+  "planNombre": "Plan Básico"
+}
+
+Response: 404 NOT FOUND (usuario no existe)
+```
+
+### 3. **POST** `/api/v1/usuario`
+Crear un nuevo usuario
+```json
+Request Body:
+{
+  "rut": "12345678-9",
+  "nombre": "Juan Pérez",
+  "password": "password123",
+  "email": "juan@example.com",
+  "estadoUsuarioId": 1,
+  "tipoUsuarioId": 1,
+  "planId": 1
+}
+
+Response: 201 CREATED (usuario creado exitosamente)
+Response: 400 BAD REQUEST (datos inválidos)
+```
+
+**Validaciones:**
+- RUT es obligatorio y único en el sistema
+- Nombre es obligatorio
+- Password es obligatorio
+- Email es obligatorio, único y debe tener formato válido
+- Email se convierte a minúsculas automáticamente
+- EstadoUsuario y TipoUsuario deben existir
+- Plan es opcional (puede ser null)
+
+### 4. **PUT** `/api/v1/usuario/{id}`
+Actualizar un usuario existente
+```json
+Request Body:
+{
+  "nombre": "Juan Pérez Actualizado",
+  "password": "newpassword123",
+  "email": "juan.nuevo@example.com",
+  "estadoUsuarioId": 2,
+  "tipoUsuarioId": 1,
+  "planId": 2
+}
+
+Response: 200 OK (usuario actualizado)
+Response: 404 NOT FOUND (usuario no existe)
+```
+
+**Notas:** 
+- Todos los campos son opcionales en el update
+- RUT NO se puede actualizar (es inmutable)
+- Si se cambia el estado, se registra automáticamente en Historial_Estado_Usuario
+
+### 5. **DELETE** `/api/v1/usuario/{id}`
+**Eliminar un usuario (Borrado Lógico)**
+
+⚠️ **IMPORTANTE:** Este endpoint NO elimina físicamente el usuario. En su lugar, cambia el estado a "Inactivo" y registra el cambio en el historial.
+
+```json
+Response: 200 OK
+{
+  "id": 1,
+  "rut": "12345678-9",
+  "nombre": "Juan Pérez",
+  "email": "juan@example.com",
+  "estadoUsuarioId": 2,
+  "estadoUsuarioNombre": "Inactivo",
+  "tipoUsuarioId": 1,
+  "tipoUsuarioNombre": "Usuario Regular",
+  "planId": 1,
+  "planNombre": "Plan Básico"
+}
+
+Response: 404 NOT FOUND (usuario no existe)
+```
+
+### 6. **GET** `/api/v1/usuario/rut/{rut}`
+Obtener usuario por RUT (único)
+```json
+Ejemplo: GET /api/v1/usuario/rut/12345678-9
+
+Response: 200 OK
+{
+  "id": 1,
+  "rut": "12345678-9",
+  "nombre": "Juan Pérez",
+  "email": "juan@example.com",
+  "estadoUsuarioId": 1,
+  "estadoUsuarioNombre": "Activo",
+  "tipoUsuarioId": 1,
+  "tipoUsuarioNombre": "Usuario Regular",
+  "planId": 1,
+  "planNombre": "Plan Básico"
+}
+
+Response: 404 NOT FOUND (usuario no encontrado)
+```
+
+### 7. **GET** `/api/v1/usuario/email/{email}`
+Obtener usuario por email (único)
+```json
+Ejemplo: GET /api/v1/usuario/email/juan@example.com
+
+Response: 200 OK (mismo formato que por RUT)
+Response: 404 NOT FOUND (usuario no encontrado)
+```
+
+### 8. **GET** `/api/v1/usuario/estado/{estadoUsuarioId}`
+Obtener usuarios por estado
+```json
+Ejemplo: GET /api/v1/usuario/estado/1
+
+Response: 200 OK
+[
+  {
+    "id": 1,
+    "rut": "12345678-9",
+    "nombre": "Juan Pérez",
+    "email": "juan@example.com",
+    "estadoUsuarioId": 1,
+    "estadoUsuarioNombre": "Activo",
+    "tipoUsuarioId": 1,
+    "tipoUsuarioNombre": "Usuario Regular",
+    "planId": 1,
+    "planNombre": "Plan Básico"
+  }
+]
+
+Response: 200 OK (lista vacía si no hay usuarios con ese estado)
+[]
+```
+
+**Estados comunes:**
+- `1` - Activo
+- `2` - Inactivo
+- `3` - Suspendido
+
+### 9. **GET** `/api/v1/usuario/tipo/{tipoUsuarioId}`
+Obtener usuarios por tipo de usuario
+```json
+Ejemplo: GET /api/v1/usuario/tipo/1
+
+Response: 200 OK (array de usuarios con ese tipo)
+```
+
+**Tipos comunes:**
+- `1` - Usuario Regular
+- `2` - Administrador
+
+### 10. **GET** `/api/v1/usuario/plan/{planId}`
+Obtener usuarios por plan
+```json
+Ejemplo: GET /api/v1/usuario/plan/1
+
+Response: 200 OK (array de usuarios con ese plan)
+```
+
+### 11. **GET** `/api/v1/usuario/nombre/{nombre}`
+Buscar usuarios por nombre (búsqueda parcial, case-insensitive)
+```json
+Ejemplo: GET /api/v1/usuario/nombre/juan
+
+Response: 200 OK
+[
+  {
+    "id": 1,
+    "rut": "12345678-9",
+    "nombre": "Juan Pérez",
+    "email": "juan@example.com",
+    "estadoUsuarioId": 1,
+    "estadoUsuarioNombre": "Activo",
+    "tipoUsuarioId": 1,
+    "tipoUsuarioNombre": "Usuario Regular",
+    "planId": 1,
+    "planNombre": "Plan Básico"
+  },
+  {
+    "id": 2,
+    "rut": "98765432-1",
+    "nombre": "Juan García",
+    "email": "jgarcia@example.com",
+    "estadoUsuarioId": 1,
+    "estadoUsuarioNombre": "Activo",
+    "tipoUsuarioId": 1,
+    "tipoUsuarioNombre": "Usuario Regular",
+    "planId": 2,
+    "planNombre": "Plan Premium"
+  }
+]
+```
+
+**Nota:** Búsqueda case-insensitive. "juan" encuentra "Juan Pérez", "JUAN García", etc.
+
+---
+
 ## 🚀 Cómo Ejecutar
 
 1. **Asegúrate de que la base de datos esté configurada correctamente** en `application.properties`
@@ -680,6 +928,73 @@ curl -X GET http://localhost:8060/api/v1/recurso/nombre/sala
 curl -X GET http://localhost:8060/api/v1/recurso/capacidad/10
 ```
 
+### Ejemplos para Usuario:
+
+**Obtener todos los usuarios:**
+```bash
+curl -X GET http://localhost:8060/api/v1/usuario
+```
+
+**Crear un usuario:**
+```bash
+curl -X POST http://localhost:8060/api/v1/usuario \
+  -H "Content-Type: application/json" \
+  -d '{
+    "rut": "12345678-9",
+    "nombre": "Juan Pérez",
+    "password": "password123",
+    "email": "juan@example.com",
+    "estadoUsuarioId": 1,
+    "tipoUsuarioId": 1,
+    "planId": 1
+  }'
+```
+
+**Actualizar un usuario:**
+```bash
+curl -X PUT http://localhost:8060/api/v1/usuario/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre": "Juan Pérez Actualizado",
+    "estadoUsuarioId": 2
+  }'
+```
+
+**Eliminar usuario (borrado lógico):**
+```bash
+curl -X DELETE http://localhost:8060/api/v1/usuario/1
+```
+
+**Buscar usuario por RUT:**
+```bash
+curl -X GET http://localhost:8060/api/v1/usuario/rut/12345678-9
+```
+
+**Buscar usuario por email:**
+```bash
+curl -X GET http://localhost:8060/api/v1/usuario/email/juan@example.com
+```
+
+**Buscar usuarios por estado:**
+```bash
+curl -X GET http://localhost:8060/api/v1/usuario/estado/1
+```
+
+**Buscar usuarios por tipo:**
+```bash
+curl -X GET http://localhost:8060/api/v1/usuario/tipo/1
+```
+
+**Buscar usuarios por plan:**
+```bash
+curl -X GET http://localhost:8060/api/v1/usuario/plan/1
+```
+
+**Buscar usuarios por nombre:**
+```bash
+curl -X GET http://localhost:8060/api/v1/usuario/nombre/juan
+```
+
 ---
 
 ## 📋 Notas Técnicas
@@ -710,6 +1025,17 @@ curl -X GET http://localhost:8060/api/v1/recurso/capacidad/10
 4. **Tipos de Recurso** en la base de datos:
    - Al menos 1 tipo de recurso (ej: "Sala de Reuniones", "Escritorio", "Sala de Conferencias")
 
-5. **Datos de prueba** cargados (usuarios, recursos, planes, etc.)
+5. **Estados de Usuario** en la base de datos:
+   - Debe existir un estado llamado "Inactivo" para el borrado lógico de usuarios
+   - Recomendado: "Activo", "Inactivo", "Suspendido"
+
+6. **Tipos de Usuario** en la base de datos:
+   - Al menos 1 tipo de usuario (ej: "Usuario Regular", "Administrador")
+
+7. **Planes** en la base de datos:
+   - Los planes son opcionales para los usuarios (pueden ser NULL)
+   - Recomendado: "Plan Básico", "Plan Premium", "Plan Empresarial"
+
+8. **Datos de prueba** cargados (usuarios, recursos, planes, etc.)
 
 ---
