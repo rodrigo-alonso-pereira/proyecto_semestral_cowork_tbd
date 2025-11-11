@@ -1,15 +1,6 @@
 -- DML Cowork-App
 
-INSERT INTO Tipo_Usuario (Nombre) VALUES
-('Administrador'),
-('Gerente'),
-('Cliente'),
-('Walker-in');
-
-INSERT INTO Estado_Usuario (Nombre) VALUES
-('Activo'),
-('Inactivo'),
-('Suspendido');
+SET search_path TO reservas;
 
 INSERT INTO Plan (Nombre, Precio_mensual, Tiempo_incluido) VALUES
 ('Básico', 35000, 15),
@@ -17,17 +8,39 @@ INSERT INTO Plan (Nombre, Precio_mensual, Tiempo_incluido) VALUES
 ('Avanzado', 120000, 80),
 ('Sin Plan', 0, 0);
 
+INSERT INTO Estado_Usuario (Nombre) VALUES
+('Activo'),
+('Inactivo'),
+('Suspendido');
+
+INSERT INTO Tipo_Usuario (Nombre) VALUES
+('Administrador'),
+('Gerente'),
+('Cliente'),
+('Walker-in');
+
 INSERT INTO Tipo_Recurso (Nombre) VALUES
 ('Escritorio'), -- id 1
 ('Oficina'), -- id 2
-('Sala'), -- id 3
+('Sala de Reuniones'), -- id 3
 ('Cabina'), -- id 4
 ('Estudio'); -- id 5
 
 INSERT INTO Estado_Recurso (Nombre) VALUES
-('Disponible'),
-('No Disponible'),
-('En Mantenimiento');
+('Activo'),
+('En Mantenimiento'),
+('Inactivo');
+
+INSERT INTO Estado_Factura (Nombre) VALUES
+('Pendiente'),
+('Pagada'),
+('Vencida'),
+('Cancelada');
+
+INSERT INTO Estado_Reserva (Nombre) VALUES
+('Activa'),
+('Cancelada'),
+('Completada');
 
 INSERT INTO Recurso (Nombre, Precio, Capacidad, Tipo_recurso_id, Estado_recurso_id) VALUES
 ('Hot Desk 01', 5000, 1, 1, 1),
@@ -38,18 +51,12 @@ INSERT INTO Recurso (Nombre, Precio, Capacidad, Tipo_recurso_id, Estado_recurso_
 ('Escritorio Dedicado 03', 8000, 1, 1, 2),
 ('Oficina Privada 01', 50000, 4, 2, 1),
 ('Oficina Privada 02', 50000, 4, 2, 1),
-('Oficina Privada 03', 50000, 4, 2, 1);
-
-INSERT INTO Recurso (Nombre, Precio, Capacidad, Tipo_recurso_id, Estado_recurso_id) VALUES
-('Sala Reuniones (S)', 8000, 4, 3, 1),
-('Sala Reuniones (M)', 15000, 8, 3, 1),
-('Sala Reuniones (L)', 25000, 15, 3, 1);
-
-INSERT INTO Recurso (Nombre, Precio, Capacidad, Tipo_recurso_id, Estado_recurso_id) VALUES
+('Oficina Privada 03', 50000, 4, 2, 1),
+('Sala de reuniones Pequeña', 8000, 4, 3, 1),
+('Sala de reuniones Mediana', 15000, 8, 3, 1),
+('Sala de reuniones Grande', 25000, 15, 3, 1),
 ('Cabina 01', 3000, 1, 4, 1),
-('Cabina 02', 3000, 1, 4, 1);
-
-INSERT INTO Recurso (Nombre, Precio, Capacidad, Tipo_recurso_id, Estado_recurso_id) VALUES
+('Cabina 02', 3000, 1, 4, 1),
 ('Estudio Podcast', 12000, 4, 5, 1);
 
 
@@ -77,44 +84,48 @@ INSERT INTO Usuario (Rut, Nombre, Password, Email, Estado_usuario_id, Tipo_usuar
 
 
 -- 4. HISTORIAL DE ESTADOS DE USUARIO (Hija de Usuario)
-INSERT INTO Usuario_Estado_Usuario (Usuario_id, Estado_usuario_id, Fecha_cambio_estado) VALUES
-(1, 1, CURRENT_DATE),
-(2, 1, CURRENT_DATE),
-(3, 1, CURRENT_DATE),
-(4, 1, CURRENT_DATE),
-(5, 1, CURRENT_DATE),
-(6, 1, CURRENT_DATE - INTERVAL '6 months'),
-(6, 3, CURRENT_DATE - INTERVAL '1 month'),  -- David pasó a Suspendido
-(7, 1, CURRENT_DATE),
-(8, 1, CURRENT_DATE),
-(9, 1, CURRENT_DATE),
-(10, 1, CURRENT_DATE - INTERVAL '2 months'),
-(10, 2, CURRENT_DATE - INTERVAL '1 month');  -- Héctor pasó a Inactivo
+INSERT INTO Historial_Estado_Usuario (Usuario_id, Estado_usuario_id, Fecha_cambio_estado) VALUES
+(1, 1, '2025-11-09'),  -- Admin - Activo
+(2, 1, '2025-11-09'),  -- Gerente - Activo
+(3, 1, '2025-11-09'),  -- Ana - Activo
+(4, 1, '2025-11-09'),  -- Benito - Activo
+(5, 1, '2025-11-09'),  -- Cecilia - Activo
+(6, 1, '2025-05-09'),  -- David - Activo (hace 6 meses)
+(6, 3, '2025-10-09'),  -- David - pasó a Suspendido (hace 1 mes)
+(7, 1, '2025-11-09'),  -- Elena - Activo
+(8, 1, '2025-11-09'),  -- Felipe - Activo
+(9, 1, '2025-11-09'),  -- Gabriela - Activo
+(10, 1, '2025-09-09'), -- Héctor - Activo (hace 2 meses)
+(10, 2, '2025-10-09'); -- Héctor - pasó a Inactivo (hace 1 mes)
 
 -- 5. RESERVAS (Hija de Usuario y Recurso)
-INSERT INTO Reserva (Hora_inicio, Hora_termino, Estado, Fecha_reserva, Valor_reserva, Usuario_id, Recurso_id) VALUES
--- Reservas de Hoy
-('09:00:00', '11:00:00', TRUE, CURRENT_DATE, 10000, 4, 1),
-('14:00:00', '16:00:00', TRUE, CURRENT_DATE, 30000, 7, 10),
-('16:30:00', '17:30:00', TRUE, CURRENT_DATE, 3000, 8, 13),
-('10:00:00', '18:00:00', TRUE, CURRENT_DATE, 400000, 3, 7),
+INSERT INTO Reserva (Inicio_reserva, Termino_reserva, Fecha_creacion, Valor, Usuario_id, Recurso_id, Estado_reserva_id) VALUES
+-- Reservas del día (Lunes 10 Nov 2025)
+('2025-11-10 09:00:00', '2025-11-10 11:00:00', '2025-11-10', 10000, 4, 1, 1),   -- Benito, Hot Desk 01, Activa
+('2025-11-10 14:00:00', '2025-11-10 16:00:00', '2025-11-10', 16000, 7, 10, 1),  -- Elena, Sala Pequeña, Activa
+('2025-11-10 16:00:00', '2025-11-10 17:00:00', '2025-11-10', 3000, 8, 13, 1),   -- Felipe, Cabina 01, Activa
+('2025-11-10 10:00:00', '2025-11-10 18:00:00', '2025-11-10', 400000, 3, 7, 1),  -- Ana, Oficina Privada 01, Activa
 
--- Reservas Futuras
-('10:00:00', '12:00:00', TRUE, CURRENT_DATE + INTERVAL '1 day', 24000, 5, 15),
-('14:00:00', '16:00:00', TRUE, CURRENT_DATE + INTERVAL '2 days', 50000, 4, 8),
+-- Reservas Futuras (Martes 11 y Miércoles 12 Nov 2025)
+('2025-11-11 10:00:00', '2025-11-11 12:00:00', '2025-11-10', 24000, 5, 15, 1),  -- Cecilia, Estudio Podcast, Activa
+('2025-11-12 14:00:00', '2025-11-12 16:00:00', '2025-11-10', 100000, 4, 8, 1),  -- Benito, Oficina Privada 02, Activa
 
--- Reservas Pasadas (Historial)
-('17:00:00', '18:00:00', TRUE, CURRENT_DATE - INTERVAL '1 week', 15000, 9, 11),
-('08:00:00', '13:00:00', TRUE, CURRENT_DATE - INTERVAL '1 month', 250000, 3, 9),
-('12:00:00', '14:00:00', FALSE, CURRENT_DATE - INTERVAL '2 days', 16000, 8, 3),
-('09:00:00', '10:00:00', TRUE, CURRENT_DATE - INTERVAL '3 days', 5000, 5, 2);
+-- Reservas Pasadas (Historial) - Completadas (Lunes 3 Nov y Viernes 10 Oct 2025)
+('2025-11-03 17:00:00', '2025-11-03 18:00:00', '2025-11-03', 15000, 9, 11, 3),  -- Gabriela, Sala Mediana, Completada
+('2025-10-10 09:00:00', '2025-10-10 14:00:00', '2025-10-10', 250000, 3, 9, 3),  -- Ana, Oficina Privada 03, Completada
+
+-- Reserva Cancelada (Jueves 6 Nov 2025)
+('2025-11-06 12:00:00', '2025-11-06 14:00:00', '2025-11-06', 16000, 8, 3, 2),   -- Felipe, Hot Desk 03, Cancelada
+
+-- Reserva Completada (Miércoles 5 Nov 2025)
+('2025-11-05 09:00:00', '2025-11-05 10:00:00', '2025-11-05', 5000, 5, 2, 3);    -- Cecilia, Hot Desk 02, Completada
 
 -- 6. FACTURAS (Hija de Usuario)
-INSERT INTO Factura (Numero_factura, Fecha_emision, Estado, Total, Usuario_id) VALUES
-(20250001, CURRENT_DATE - INTERVAL '30 days', TRUE, 120000, 3),
-(20250002, CURRENT_DATE, FALSE, 75000, 5),
-(20250003, CURRENT_DATE - INTERVAL '15 days', TRUE, 15000, 9),
-(20250004, CURRENT_DATE, TRUE, 35000, 4),
-(20250005, CURRENT_DATE + INTERVAL '5 days', FALSE, 120000, 6);
+INSERT INTO Factura (Numero_factura, Fecha_emision, Total, Usuario_id, Estado_factura_id) VALUES
+(20250001, '2025-10-10', 120000, 3, 2), -- Pagada - Ana
+(20250002, '2025-11-09', 75000, 5, 1),  -- Pendiente - Cecilia
+(20250003, '2025-10-25', 15000, 9, 2),  -- Pagada - Gabriela
+(20250004, '2025-11-09', 35000, 4, 2),  -- Pagada - Benito
+(20250005, '2025-11-14', 120000, 6, 1); -- Pendiente - David (fecha futura)
 
 COMMIT;

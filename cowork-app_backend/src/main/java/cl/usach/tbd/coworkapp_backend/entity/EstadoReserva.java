@@ -1,24 +1,26 @@
 package cl.usach.tbd.coworkapp_backend.entity;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 @Entity
-@Table(name = "plan", schema = "reservas")
+@Table(name = "estado_reserva", schema = "reservas")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Plan {
+public class EstadoReserva {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;
-    @Column(name = "nombre", nullable = false, length = 200)
+
+    @Column(name = "nombre", nullable = false, unique = true, length = 200)
     private String nombre;
-    @Column(name = "precio_mensual", nullable = false)
-    private Long precioMensual;
-    @Column(name = "tiempo_incluido", nullable = false)
-    private Integer tiempoIncluido;
+
     @Column(name = "activo", nullable = false)
     private Boolean activo = true;
 }
+

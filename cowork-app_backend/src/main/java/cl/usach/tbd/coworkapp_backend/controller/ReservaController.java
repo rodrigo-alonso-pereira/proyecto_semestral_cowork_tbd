@@ -78,13 +78,13 @@ public class ReservaController {
     }
     /**
      * DELETE /api/v1/reserva/{id}
-     * Eliminar una reserva
+     * Eliminar una reserva (borrado lógico - cambia estado a "Cancelada")
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteReserva(@PathVariable Long id) {
+    public ResponseEntity<ReservaResponseDTO> deleteReserva(@PathVariable Long id) {
         try {
-            reservaService.deleteReserva(id);
-            return ResponseEntity.noContent().build();
+            ReservaResponseDTO reserva = reservaService.deleteReserva(id);
+            return ResponseEntity.ok(reserva);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         } catch (Exception e) {
@@ -118,27 +118,28 @@ public class ReservaController {
         }
     }
     /**
-     * GET /api/v1/reserva/estado/{estado}
-     * Obtener reservas por estado (true=activas, false=inactivas)
+     * GET /api/v1/reserva/estado-reserva/{estadoReservaId}
+     * Obtener reservas por estado de reserva
      */
-    @GetMapping("/estado/{estado}")
-    public ResponseEntity<List<ReservaResponseDTO>> getReservasByEstado(@PathVariable Boolean estado) {
+    @GetMapping("/estado-reserva/{estadoReservaId}")
+    public ResponseEntity<List<ReservaResponseDTO>> getReservasByEstadoReservaId(@PathVariable Long estadoReservaId) {
         try {
-            List<ReservaResponseDTO> reservas = reservaService.getReservasByEstado(estado);
+            List<ReservaResponseDTO> reservas = reservaService.getReservasByEstadoReservaId(estadoReservaId);
             return ResponseEntity.ok(reservas);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
     /**
-     * GET /api/v1/reserva/fecha/{fecha}
-     * Obtener reservas por fecha (formato: yyyy-MM-dd)
+     * GET /api/v1/reserva/fecha-creacion/{fecha}
+     * Obtener reservas por fecha de creación (formato: yyyy-MM-dd)
      */
-    @GetMapping("/fecha/{fecha}")
-    public ResponseEntity<List<ReservaResponseDTO>> getReservasByFecha(
+    @GetMapping("/fecha-creacion/{fecha}")
+    public ResponseEntity<List<ReservaResponseDTO>> getReservasByFechaCreacion(
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
         try {
-            List<ReservaResponseDTO> reservas = reservaService.getReservasByFecha(fecha);
+            List<ReservaResponseDTO> reservas = reservaService.getReservasByFechaCreacion(fecha);
             return ResponseEntity.ok(reservas);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
