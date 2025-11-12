@@ -11,11 +11,13 @@ El proyecto ha sido **compilado exitosamente** y está listo para usar.
 
 ### ⚠️ **IMPORTANTE: Todas las entidades usan borrado lógico**
 
-El sistema implementa **borrado lógico** para las tres entidades principales (Reserva, Recurso y Usuario). Esto significa que:
+El sistema implementa **borrado lógico** para las tres entidades principales (Reserva, Recurso y Usuario) y **filtrado de inactivos/eliminados** para las entidades de catálogo. Esto significa que:
 
 1. **DELETE no elimina físicamente**: Cuando se llama a `DELETE /api/v1/{entidad}/{id}`, el registro NO se borra de la base de datos, sino que se cambia su estado a "Eliminado".
 
-2. **Filtrado automático en consultas GET**: Todos los endpoints de consulta (GET) **excluyen automáticamente** las entidades con estado "Eliminado":
+2. **Filtrado automático en consultas GET**: Todos los endpoints de consulta (GET) **excluyen automáticamente** las entidades con estado "Eliminado" o inactivas:
+   
+   **Entidades Principales:**
    - `GET /api/v1/reserva` - No retorna reservas con estado "Eliminado"
    - `GET /api/v1/reserva/{id}` - Retorna 404 si la reserva está "Eliminada"
    - `GET /api/v1/recurso` - No retorna recursos con estado "Eliminado"
@@ -23,11 +25,21 @@ El sistema implementa **borrado lógico** para las tres entidades principales (R
    - `GET /api/v1/usuario` - No retorna usuarios con estado "Eliminado"
    - `GET /api/v1/usuario/{id}` - Retorna 404 si el usuario está "Eliminado"
    - **Y todos los demás endpoints de búsqueda** también aplican este filtro
+   
+   **Catálogos:**
+   - `GET /api/v1/tipo-usuario` - No retorna tipos con nombre "Eliminado"
+   - `GET /api/v1/estado-usuario` - No retorna estados con nombre "Eliminado"
+   - `GET /api/v1/plan` - No retorna planes con activo = false
+   - `GET /api/v1/tipo-recurso` - No retorna tipos con nombre "Eliminado"
+   - `GET /api/v1/estado-recurso` - No retorna estados con nombre "Eliminado"
+   - `GET /api/v1/estado-reserva` - No retorna estados con activo = false
+   - `GET /api/v1/estado-factura` - No retorna estados con activo = false
 
 3. **Estado "Eliminado" por entidad**:
    - **Reserva**: Estado "Eliminado" (campo `estado_reserva_id`)
    - **Recurso**: Estado "Eliminado" (campo `estado_recurso_id`)
    - **Usuario**: Estado "Eliminado" (campo `estado_usuario_id`)
+   - **Catálogos**: Filtrado por campo `activo` (Boolean) o nombre != "Eliminado"
 
 4. **Búsqueda por estado**: Si deseas ver las entidades eliminadas, puedes buscar explícitamente por el estado "Eliminado" usando:
    - `GET /api/v1/reserva/estado-reserva/{idEstadoEliminado}`
@@ -105,33 +117,59 @@ curl -X GET http://localhost:8060/api/v1/recurso/estado/3
 - `UsuarioCreateDTO.java` - DTO para crear nuevos usuarios
 - `UsuarioUpdateDTO.java` - DTO para actualizar usuarios existentes
 
+#### Catálogos:
+- `TipoUsuarioResponseDTO.java` - DTO para respuestas de tipos de usuario
+- `EstadoUsuarioResponseDTO.java` - DTO para respuestas de estados de usuario
+- `PlanResponseDTO.java` - DTO para respuestas de planes
+- `TipoRecursoResponseDTO.java` - DTO para respuestas de tipos de recurso
+- `EstadoRecursoResponseDTO.java` - DTO para respuestas de estados de recurso
+- `EstadoReservaResponseDTO.java` - DTO para respuestas de estados de reserva
+- `EstadoFacturaResponseDTO.java` - DTO para respuestas de estados de factura
+
 ### Repositories
 
 #### Repositorios de Reserva:
 - `ReservaRepository.java` - Repositorio con métodos de consulta personalizados
-- `EstadoReservaRepository.java` - **[NUEVO]** Repositorio para estados de reserva
+- `EstadoReservaRepository.java` - Repositorio para estados de reserva
 
 #### Repositorios de Recurso:
 - `RecursoRepository.java` - Repositorio con métodos de búsqueda por tipo, estado, nombre y capacidad
-- `EstadoRecursoRepository.java` - **[NUEVO]** Repositorio para estados de recurso
-- `TipoRecursoRepository.java` - **[NUEVO]** Repositorio para tipos de recurso
+- `EstadoRecursoRepository.java` - Repositorio para estados de recurso
+- `TipoRecursoRepository.java` - Repositorio para tipos de recurso
 
 #### Repositorios de Usuario:
 - `UsuarioRepository.java` - Repositorio con métodos de búsqueda por RUT, email, estado, tipo, plan y nombre
-- `EstadoUsuarioRepository.java` - **[NUEVO]** Repositorio para estados de usuario
-- `TipoUsuarioRepository.java` - **[NUEVO]** Repositorio para tipos de usuario
-- `PlanRepository.java` - **[NUEVO]** Repositorio para planes
-- `HistorialEstadoUsuarioRepository.java` - **[NUEVO]** Repositorio para historial de cambios de estado
+- `EstadoUsuarioRepository.java` - Repositorio para estados de usuario
+- `TipoUsuarioRepository.java` - Repositorio para tipos de usuario
+- `PlanRepository.java` - Repositorio para planes
+- `HistorialEstadoUsuarioRepository.java` - Repositorio para historial de cambios de estado
+
+#### Repositorios de Catálogo Adicionales:
+- `EstadoFacturaRepository.java` - Repositorio para estados de factura
 
 ### Service Layer
 - `ReservaService.java` - Lógica de negocio para el CRUD de reservas
-- `RecursoService.java` - **[NUEVO]** Lógica de negocio para el CRUD de recursos
-- `UsuarioService.java` - **[NUEVO]** Lógica de negocio para el CRUD de usuarios (incluye registro de historial)
+- `RecursoService.java` - Lógica de negocio para el CRUD de recursos
+- `UsuarioService.java` - Lógica de negocio para el CRUD de usuarios (incluye registro de historial)
+- `TipoUsuarioService.java` - Servicio para consulta de tipos de usuario
+- `EstadoUsuarioService.java` - Servicio para consulta de estados de usuario
+- `PlanService.java` - Servicio para consulta de planes
+- `TipoRecursoService.java` - Servicio para consulta de tipos de recurso
+- `EstadoRecursoService.java` - Servicio para consulta de estados de recurso
+- `EstadoReservaService.java` - Servicio para consulta de estados de reserva
+- `EstadoFacturaService.java` - Servicio para consulta de estados de factura
 
 ### Controller Layer
 - `ReservaController.java` - Controlador REST para reservas
-- `RecursoController.java` - **[NUEVO]** Controlador REST para recursos
-- `UsuarioController.java` - **[NUEVO]** Controlador REST para usuarios
+- `RecursoController.java` - Controlador REST para recursos
+- `UsuarioController.java` - Controlador REST para usuarios
+- `TipoUsuarioController.java` - Controlador REST para tipos de usuario
+- `EstadoUsuarioController.java` - Controlador REST para estados de usuario
+- `PlanController.java` - Controlador REST para planes
+- `TipoRecursoController.java` - Controlador REST para tipos de recurso
+- `EstadoRecursoController.java` - Controlador REST para estados de recurso
+- `EstadoReservaController.java` - Controlador REST para estados de reserva
+- `EstadoFacturaController.java` - Controlador REST para estados de factura
 
 ---
 
@@ -859,6 +897,114 @@ Response: 200 OK
 ```
 
 **Nota:** Búsqueda case-insensitive. "juan" encuentra "Juan Pérez", "JUAN García", etc.
+
+---
+
+## 🔌 Endpoints de Catálogos
+
+### Base URL: `/api/v1/[catalogo]`
+
+Los siguientes endpoints están disponibles para consultar los catálogos del sistema. **Todos los endpoints de catálogo filtran automáticamente registros inactivos o eliminados.**
+
+### 1. Tipo de Usuario
+
+**GET** `/api/v1/tipo-usuario` - Obtener todos los tipos de usuario (excluye eliminados)
+**GET** `/api/v1/tipo-usuario/{id}` - Obtener un tipo de usuario por ID
+
+```json
+Response: 200 OK
+{
+  "id": 1,
+  "nombre": "Usuario Regular"
+}
+```
+
+### 2. Estado de Usuario
+
+**GET** `/api/v1/estado-usuario` - Obtener todos los estados de usuario (excluye eliminados)
+**GET** `/api/v1/estado-usuario/{id}` - Obtener un estado de usuario por ID
+
+```json
+Response: 200 OK
+{
+  "id": 1,
+  "nombre": "Activo"
+}
+```
+
+### 3. Plan
+
+**GET** `/api/v1/plan` - Obtener todos los planes (excluye inactivos)
+**GET** `/api/v1/plan/{id}` - Obtener un plan por ID
+
+```json
+Response: 200 OK
+{
+  "id": 1,
+  "nombre": "Plan Básico",
+  "precioMensual": 50000,
+  "tiempoIncluido": 20,
+  "activo": true
+}
+```
+
+### 4. Tipo de Recurso
+
+**GET** `/api/v1/tipo-recurso` - Obtener todos los tipos de recurso (excluye eliminados)
+**GET** `/api/v1/tipo-recurso/{id}` - Obtener un tipo de recurso por ID
+
+```json
+Response: 200 OK
+{
+  "id": 1,
+  "nombre": "Sala de Reuniones"
+}
+```
+
+### 5. Estado de Recurso
+
+**GET** `/api/v1/estado-recurso` - Obtener todos los estados de recurso (excluye eliminados)
+**GET** `/api/v1/estado-recurso/{id}` - Obtener un estado de recurso por ID
+
+```json
+Response: 200 OK
+{
+  "id": 1,
+  "nombre": "Disponible"
+}
+```
+
+### 6. Estado de Reserva
+
+**GET** `/api/v1/estado-reserva` - Obtener todos los estados de reserva (excluye inactivos)
+**GET** `/api/v1/estado-reserva/{id}` - Obtener un estado de reserva por ID
+
+```json
+Response: 200 OK
+{
+  "id": 1,
+  "nombre": "Activa"
+}
+```
+
+### 7. Estado de Factura
+
+**GET** `/api/v1/estado-factura` - Obtener todos los estados de factura (excluye inactivos)
+**GET** `/api/v1/estado-factura/{id}` - Obtener un estado de factura por ID
+
+```json
+Response: 200 OK
+{
+  "id": 1,
+  "nombre": "Pagada"
+}
+```
+
+**Nota sobre catálogos:**
+- Todos los endpoints de catálogo son de **solo lectura** (GET únicamente)
+- Filtran automáticamente registros inactivos o eliminados
+- Útiles para poblar dropdowns en el frontend
+- Retornan 404 si el registro no existe o está inactivo/eliminado
 
 ---
 
