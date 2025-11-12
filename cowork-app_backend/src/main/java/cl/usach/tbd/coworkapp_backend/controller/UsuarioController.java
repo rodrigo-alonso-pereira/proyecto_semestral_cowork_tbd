@@ -85,7 +85,7 @@ public class UsuarioController {
 
     /**
      * DELETE /api/v1/usuario/{id}
-     * Eliminar un usuario (borrado lógico - cambia estado a "Inactivo")
+     * Eliminar un usuario (borrado lógico - cambia estado a "Eliminado")
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<UsuarioResponseDTO> deleteUsuario(@PathVariable Long id) {

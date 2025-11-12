@@ -31,6 +31,7 @@ public class ReservaService {
     @Transactional(readOnly = true)
     public List<ReservaResponseDTO> getAllReservas() {
         return reservaRepository.findAll().stream()
+                .filter(this::isNotDeleted)
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
     }
@@ -39,6 +40,11 @@ public class ReservaService {
     public ReservaResponseDTO getReservaById(Long id) {
         Reserva reserva = reservaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Reserva no encontrada con id: " + id));
+
+        if (!isNotDeleted(reserva)) {
+            throw new RuntimeException("Reserva 'Eliminado' con id: " + id);
+        }
+
         return convertToResponseDTO(reserva);
     }
 
@@ -120,11 +126,11 @@ public class ReservaService {
         Reserva reserva = reservaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Reserva no encontrada con id: " + id));
 
-        // Borrado lógico: cambiar el estado a "Cancelada"
-        EstadoReserva estadoCancelada = estadoReservaRepository.findByNombre("Cancelada")
-                .orElseThrow(() -> new RuntimeException("Estado 'Cancelada' no encontrado en la base de datos"));
+        // Borrado lógico: cambiar el estado a "Eliminado"
+        EstadoReserva estadoEliminado = estadoReservaRepository.findByNombre("Eliminado")
+                .orElseThrow(() -> new RuntimeException("Estado 'Eliminado' no encontrado en la base de datos"));
 
-        reserva.setEstadoReserva(estadoCancelada);
+        reserva.setEstadoReserva(estadoEliminado);
         Reserva updatedReserva = reservaRepository.save(reserva);
 
         return convertToResponseDTO(updatedReserva);
@@ -133,6 +139,7 @@ public class ReservaService {
     @Transactional(readOnly = true)
     public List<ReservaResponseDTO> getReservasByUsuarioId(Long usuarioId) {
         return reservaRepository.findByUsuarioId(usuarioId).stream()
+                .filter(this::isNotDeleted)
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
     }
@@ -140,6 +147,7 @@ public class ReservaService {
     @Transactional(readOnly = true)
     public List<ReservaResponseDTO> getReservasByRecursoId(Long recursoId) {
         return reservaRepository.findByRecursoId(recursoId).stream()
+                .filter(this::isNotDeleted)
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
     }
@@ -147,6 +155,7 @@ public class ReservaService {
     @Transactional(readOnly = true)
     public List<ReservaResponseDTO> getReservasByEstadoReservaId(Long estadoReservaId) {
         return reservaRepository.findByEstadoReservaId(estadoReservaId).stream()
+                .filter(this::isNotDeleted)
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
     }
@@ -154,6 +163,7 @@ public class ReservaService {
     @Transactional(readOnly = true)
     public List<ReservaResponseDTO> getReservasByFechaCreacion(LocalDate fechaCreacion) {
         return reservaRepository.findByFechaCreacion(fechaCreacion).stream()
+                .filter(this::isNotDeleted)
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
     }
@@ -161,8 +171,16 @@ public class ReservaService {
     @Transactional(readOnly = true)
     public List<ReservaResponseDTO> getReservasByFecha(LocalDate fecha) {
         return reservaRepository.findByFechaReserva(fecha).stream()
+                .filter(this::isNotDeleted)
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Valida que la reserva no esté en estado "Eliminado"
+     */
+    private boolean isNotDeleted(Reserva reserva) {
+        return !reserva.getEstadoReserva().getNombre().equalsIgnoreCase("Eliminado");
     }
 
     private ReservaResponseDTO convertToResponseDTO(Reserva reserva) {

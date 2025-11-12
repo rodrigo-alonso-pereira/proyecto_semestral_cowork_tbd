@@ -17,8 +17,7 @@ INSERT INTO Estado_Usuario (Nombre) VALUES
 INSERT INTO Tipo_Usuario (Nombre) VALUES
 ('Administrador'),
 ('Gerente'),
-('Cliente'),
-('Walker-in');
+('Cliente');
 
 INSERT INTO Tipo_Recurso (Nombre) VALUES
 ('Escritorio'), -- id 1
@@ -81,10 +80,8 @@ INSERT INTO Usuario (Rut, Nombre, Password, Email, Estado_usuario_id, Tipo_usuar
 ('33333333-3', 'Cecilia Díaz', 'hash_ceci', 'ceci.d@mail.com', 1, 3, 2),        -- ID 5: Activo, Plan Medio
 ('44444444-4', 'David Riquelme', 'hash_david', 'david.r@mail.com', 3, 3, 3),   -- ID 6: Suspendido, Plan Avanzado
 ('55555555-5', 'Elena Morales', 'hash_elena', 'elena.m@mail.com', 1, 3, 2),     -- ID 7: Activo, Plan Medio
-
--- Walker-in (Tipo ID 4)
-('66666666-6', 'Felipe Soto', 'hash_felipe', 'felipe.s@mail.com', 1, 4, 4),      -- ID 8: Walker-in, Sin Plan
-('77777777-7', 'Gabriela Peña', 'hash_gabi', 'gabi.p@mail.com', 1, 4, 4),      -- ID 9: Walker-in, Sin Plan
+('66666666-6', 'Felipe Soto', 'hash_felipe', 'felipe.s@mail.com', 1, 3, 4),      -- ID 8: Walker-in, Sin Plan
+('77777777-7', 'Gabriela Peña', 'hash_gabi', 'gabi.p@mail.com', 1, 3, 4),      -- ID 9: Walker-in, Sin Plan
 
 -- Cliente Inactivo
 ('00000000-0', 'Héctor Vidal', 'hash_hector', 'hector.v@mail.com', 2, 3, 1);    -- ID 10: Inactivo, Plan Básico

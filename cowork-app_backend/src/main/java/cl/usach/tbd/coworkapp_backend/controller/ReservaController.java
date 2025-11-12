@@ -78,7 +78,7 @@ public class ReservaController {
     }
     /**
      * DELETE /api/v1/reserva/{id}
-     * Eliminar una reserva (borrado lógico - cambia estado a "Cancelada")
+     * Eliminar una reserva (borrado lógico - cambia estado a "Eliminado")
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<ReservaResponseDTO> deleteReserva(@PathVariable Long id) {
@@ -130,6 +130,7 @@ public class ReservaController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
     /**
      * GET /api/v1/reserva/fecha/{fecha}
      * Obtener reservas por fecha (busca en inicioReserva y terminoReserva)

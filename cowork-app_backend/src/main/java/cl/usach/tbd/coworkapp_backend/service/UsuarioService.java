@@ -42,6 +42,7 @@ public class UsuarioService {
     @Transactional(readOnly = true)
     public List<UsuarioResponseDTO> getAllUsuarios() {
         return usuarioRepository.findAll().stream()
+                .filter(this::isNotDeleted)
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
     }
@@ -50,6 +51,11 @@ public class UsuarioService {
     public UsuarioResponseDTO getUsuarioById(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado con id: " + id));
+
+        if (!isNotDeleted(usuario)) {
+            throw new RuntimeException("Usuario 'Eliminado' con id: " + id);
+        }
+
         return convertToResponseDTO(usuario);
     }
 
@@ -180,20 +186,20 @@ public class UsuarioService {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado con id: " + id));
 
-        // Borrado lógico: cambiar el estado a "Inactivo"
-        EstadoUsuario estadoInactivo = estadoUsuarioRepository.findByNombre("Inactivo")
-                .orElseThrow(() -> new RuntimeException("Estado 'Inactivo' no encontrado en la base de datos"));
+        // Borrado lógico: cambiar el estado a "Eliminado"
+        EstadoUsuario estadoEliminado = estadoUsuarioRepository.findByNombre("Eliminado")
+                .orElseThrow(() -> new RuntimeException("Estado 'Eliminado' no encontrado en la base de datos"));
 
         // Solo registrar en historial si el estado realmente cambió
-        if (!usuario.getEstadoUsuario().getId().equals(estadoInactivo.getId())) {
+        if (!usuario.getEstadoUsuario().getId().equals(estadoEliminado.getId())) {
             // Registrar el cambio de estado en el historial
             HistorialEstadoUsuario historial = new HistorialEstadoUsuario();
             historial.setUsuario(usuario);
-            historial.setEstadoUsuario(estadoInactivo);
+            historial.setEstadoUsuario(estadoEliminado);
             historialEstadoUsuarioRepository.save(historial);
         }
 
-        usuario.setEstadoUsuario(estadoInactivo);
+        usuario.setEstadoUsuario(estadoEliminado);
         Usuario updatedUsuario = usuarioRepository.save(usuario);
 
         return convertToResponseDTO(updatedUsuario);
@@ -203,6 +209,11 @@ public class UsuarioService {
     public UsuarioResponseDTO getUsuarioByRut(String rut) {
         Usuario usuario = usuarioRepository.findByRut(rut)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado con RUT: " + rut));
+
+        if (!isNotDeleted(usuario)) {
+            throw new RuntimeException("Usuario 'Eliminado' con RUT: " + rut);
+        }
+
         return convertToResponseDTO(usuario);
     }
 
@@ -210,12 +221,18 @@ public class UsuarioService {
     public UsuarioResponseDTO getUsuarioByEmail(String email) {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado con email: " + email));
+
+        if (!isNotDeleted(usuario)) {
+            throw new RuntimeException("Usuario 'Eliminado' con email: " + email);
+        }
+
         return convertToResponseDTO(usuario);
     }
 
     @Transactional(readOnly = true)
     public List<UsuarioResponseDTO> getUsuariosByEstadoUsuarioId(Long estadoUsuarioId) {
         return usuarioRepository.findByEstadoUsuarioId(estadoUsuarioId).stream()
+                .filter(this::isNotDeleted)
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
     }
@@ -223,6 +240,7 @@ public class UsuarioService {
     @Transactional(readOnly = true)
     public List<UsuarioResponseDTO> getUsuariosByTipoUsuarioId(Long tipoUsuarioId) {
         return usuarioRepository.findByTipoUsuarioId(tipoUsuarioId).stream()
+                .filter(this::isNotDeleted)
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
     }
@@ -230,6 +248,7 @@ public class UsuarioService {
     @Transactional(readOnly = true)
     public List<UsuarioResponseDTO> getUsuariosByPlanId(Long planId) {
         return usuarioRepository.findByPlanId(planId).stream()
+                .filter(this::isNotDeleted)
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
     }
@@ -237,8 +256,16 @@ public class UsuarioService {
     @Transactional(readOnly = true)
     public List<UsuarioResponseDTO> getUsuariosByNombre(String nombre) {
         return usuarioRepository.findByNombreContainingIgnoreCase(nombre).stream()
+                .filter(this::isNotDeleted)
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Valida que el usuario no esté en estado "Eliminado"
+     */
+    private boolean isNotDeleted(Usuario usuario) {
+        return !usuario.getEstadoUsuario().getNombre().equalsIgnoreCase("Eliminado");
     }
 
     private UsuarioResponseDTO convertToResponseDTO(Usuario usuario) {

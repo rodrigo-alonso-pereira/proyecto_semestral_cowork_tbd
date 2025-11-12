@@ -31,6 +31,7 @@ public class RecursoService {
     @Transactional(readOnly = true)
     public List<RecursoResponseDTO> getAllRecursos() {
         return recursoRepository.findAll().stream()
+                .filter(this::isNotDeleted)
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
     }
@@ -39,6 +40,11 @@ public class RecursoService {
     public RecursoResponseDTO getRecursoById(Long id) {
         Recurso recurso = recursoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Recurso no encontrado con id: " + id));
+
+        if (!isNotDeleted(recurso)) {
+            throw new RuntimeException("Recurso 'Eliminado' con id: " + id);
+        }
+
         return convertToResponseDTO(recurso);
     }
 
@@ -118,11 +124,11 @@ public class RecursoService {
         Recurso recurso = recursoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Recurso no encontrado con id: " + id));
 
-        // Borrado lógico: cambiar el estado a "Inactivo"
-        EstadoRecurso estadoInactivo = estadoRecursoRepository.findByNombre("Inactivo")
-                .orElseThrow(() -> new RuntimeException("Estado 'Inactivo' no encontrado en la base de datos"));
+        // Borrado lógico: cambiar el estado a "Eliminado"
+        EstadoRecurso estadoEliminado = estadoRecursoRepository.findByNombre("Eliminado")
+                .orElseThrow(() -> new RuntimeException("Estado 'Eliminado' no encontrado en la base de datos"));
 
-        recurso.setEstadoRecurso(estadoInactivo);
+        recurso.setEstadoRecurso(estadoEliminado);
         Recurso updatedRecurso = recursoRepository.save(recurso);
 
         return convertToResponseDTO(updatedRecurso);
@@ -131,6 +137,7 @@ public class RecursoService {
     @Transactional(readOnly = true)
     public List<RecursoResponseDTO> getRecursosByTipoRecursoId(Long tipoRecursoId) {
         return recursoRepository.findByTipoRecursoId(tipoRecursoId).stream()
+                .filter(this::isNotDeleted)
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
     }
@@ -138,6 +145,7 @@ public class RecursoService {
     @Transactional(readOnly = true)
     public List<RecursoResponseDTO> getRecursosByEstadoRecursoId(Long estadoRecursoId) {
         return recursoRepository.findByEstadoRecursoId(estadoRecursoId).stream()
+                .filter(this::isNotDeleted)
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
     }
@@ -145,6 +153,7 @@ public class RecursoService {
     @Transactional(readOnly = true)
     public List<RecursoResponseDTO> getRecursosByNombre(String nombre) {
         return recursoRepository.findByNombreContainingIgnoreCase(nombre).stream()
+                .filter(this::isNotDeleted)
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
     }
@@ -152,8 +161,16 @@ public class RecursoService {
     @Transactional(readOnly = true)
     public List<RecursoResponseDTO> getRecursosByCapacidad(Integer capacidad) {
         return recursoRepository.findByCapacidadGreaterThanEqual(capacidad).stream()
+                .filter(this::isNotDeleted)
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Valida que el recurso no esté en estado "Eliminado"
+     */
+    private boolean isNotDeleted(Recurso recurso) {
+        return !recurso.getEstadoRecurso().getNombre().equalsIgnoreCase("Eliminado");
     }
 
     private RecursoResponseDTO convertToResponseDTO(Recurso recurso) {

@@ -85,7 +85,7 @@ public class RecursoController {
 
     /**
      * DELETE /api/v1/recurso/{id}
-     * Eliminar un recurso (borrado lógico - cambia estado a "Inactivo")
+     * Eliminar un recurso (borrado lógico - cambia estado a "Eliminado")
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<RecursoResponseDTO> deleteRecurso(@PathVariable Long id) {
