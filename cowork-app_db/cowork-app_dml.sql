@@ -11,7 +11,8 @@ INSERT INTO Plan (Nombre, Precio_mensual, Tiempo_incluido) VALUES
 INSERT INTO Estado_Usuario (Nombre) VALUES
 ('Activo'),
 ('Inactivo'),
-('Suspendido');
+('Suspendido'),
+('Eliminado');
 
 INSERT INTO Tipo_Usuario (Nombre) VALUES
 ('Administrador'),
@@ -29,18 +30,24 @@ INSERT INTO Tipo_Recurso (Nombre) VALUES
 INSERT INTO Estado_Recurso (Nombre) VALUES
 ('Activo'),
 ('En Mantenimiento'),
-('Inactivo');
+('Inactivo'),
+('Eliminado');
+
 
 INSERT INTO Estado_Factura (Nombre) VALUES
 ('Pendiente'),
 ('Pagada'),
 ('Vencida'),
-('Cancelada');
+('Cancelada'),
+('Eliminado');
+
 
 INSERT INTO Estado_Reserva (Nombre) VALUES
 ('Activa'),
 ('Cancelada'),
-('Completada');
+('Completada'),
+('Eliminado');
+
 
 INSERT INTO Recurso (Nombre, Precio, Capacidad, Tipo_recurso_id, Estado_recurso_id) VALUES
 ('Hot Desk 01', 5000, 1, 1, 1),
