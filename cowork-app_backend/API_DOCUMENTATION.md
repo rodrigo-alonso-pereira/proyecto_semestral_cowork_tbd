@@ -3,7 +3,70 @@
 ## ✅ Estado del Proyecto
 El proyecto ha sido **compilado exitosamente** y está listo para usar.
 
-**Última actualización:** 10 de Noviembre, 2025
+**Última actualización:** 12 de Noviembre, 2025
+
+---
+
+## 🔒 Borrado Lógico y Filtrado de Entidades Eliminadas
+
+### ⚠️ **IMPORTANTE: Todas las entidades usan borrado lógico**
+
+El sistema implementa **borrado lógico** para las tres entidades principales (Reserva, Recurso y Usuario). Esto significa que:
+
+1. **DELETE no elimina físicamente**: Cuando se llama a `DELETE /api/v1/{entidad}/{id}`, el registro NO se borra de la base de datos, sino que se cambia su estado a "Eliminado".
+
+2. **Filtrado automático en consultas GET**: Todos los endpoints de consulta (GET) **excluyen automáticamente** las entidades con estado "Eliminado":
+   - `GET /api/v1/reserva` - No retorna reservas con estado "Eliminado"
+   - `GET /api/v1/reserva/{id}` - Retorna 404 si la reserva está "Eliminada"
+   - `GET /api/v1/recurso` - No retorna recursos con estado "Eliminado"
+   - `GET /api/v1/recurso/{id}` - Retorna 404 si el recurso está "Eliminado"
+   - `GET /api/v1/usuario` - No retorna usuarios con estado "Eliminado"
+   - `GET /api/v1/usuario/{id}` - Retorna 404 si el usuario está "Eliminado"
+   - **Y todos los demás endpoints de búsqueda** también aplican este filtro
+
+3. **Estado "Eliminado" por entidad**:
+   - **Reserva**: Estado "Eliminado" (campo `estado_reserva_id`)
+   - **Recurso**: Estado "Eliminado" (campo `estado_recurso_id`)
+   - **Usuario**: Estado "Eliminado" (campo `estado_usuario_id`)
+
+4. **Búsqueda por estado**: Si deseas ver las entidades eliminadas, puedes buscar explícitamente por el estado "Eliminado" usando:
+   - `GET /api/v1/reserva/estado-reserva/{idEstadoEliminado}`
+   - `GET /api/v1/recurso/estado/{idEstadoEliminado}`
+   - `GET /api/v1/usuario/estado/{idEstadoEliminado}`
+
+5. **Historial de cambios de estado (solo Usuario)**: Cuando se cambia el estado de un usuario (incluyendo eliminación), se registra automáticamente en la tabla `Historial_Estado_Usuario`.
+
+### Ejemplo práctico:
+
+```bash
+# Crear un recurso
+curl -X POST http://localhost:8060/api/v1/recurso \
+  -H "Content-Type: application/json" \
+  -d '{"nombre": "Sala A", "precio": 50000, "capacidad": 10, "tipoRecursoId": 1, "estadoRecursoId": 1}'
+# Respuesta: {"id": 1, ..., "estadoRecursoNombre": "Disponible"}
+
+# Obtener el recurso - FUNCIONA
+curl -X GET http://localhost:8060/api/v1/recurso/1
+# Respuesta: 200 OK - {"id": 1, ..., "estadoRecursoNombre": "Disponible"}
+
+# Eliminar el recurso (borrado lógico)
+curl -X DELETE http://localhost:8060/api/v1/recurso/1
+# Respuesta: 200 OK - {"id": 1, ..., "estadoRecursoNombre": "Eliminado"}
+
+# Intentar obtener el recurso - NO FUNCIONA (filtrado automático)
+curl -X GET http://localhost:8060/api/v1/recurso/1
+# Respuesta: 404 NOT FOUND - "Recurso no encontrado con id: 1"
+
+# Obtener todos los recursos - NO incluye el recurso eliminado
+curl -X GET http://localhost:8060/api/v1/recurso
+# Respuesta: [] (o lista sin el recurso id:1)
+
+# Ver el recurso eliminado buscando por estado "Eliminado" (ID asumido: 3)
+curl -X GET http://localhost:8060/api/v1/recurso/estado/3
+# Respuesta: [{"id": 1, ..., "estadoRecursoNombre": "Eliminado"}]
+```
+
+---
 
 ## 📁 Estructura Completa del Proyecto
 
@@ -169,7 +232,7 @@ Response: 404 NOT FOUND (reserva no existe)
 ### 5. **DELETE** `/api/v1/reserva/{id}`
 **Eliminar una reserva (Borrado Lógico)**
 
-⚠️ **IMPORTANTE:** Este endpoint NO elimina físicamente la reserva. En su lugar, cambia el estado a "Cancelada".
+⚠️ **IMPORTANTE:** Este endpoint NO elimina físicamente la reserva. En su lugar, cambia el estado a "Eliminado".
 
 ```json
 Response: 200 OK
@@ -184,7 +247,7 @@ Response: 200 OK
   "recursoId": 1,
   "recursoNombre": "Sala de Reuniones A",
   "estadoReservaId": 3,
-  "estadoReservaNombre": "Cancelada"
+  "estadoReservaNombre": "Eliminado"
 }
 
 Response: 404 NOT FOUND (reserva no existe)
@@ -444,7 +507,7 @@ Response: 404 NOT FOUND (recurso no existe)
 ### 5. **DELETE** `/api/v1/recurso/{id}`
 **Eliminar un recurso (Borrado Lógico)**
 
-⚠️ **IMPORTANTE:** Este endpoint NO elimina físicamente el recurso. En su lugar, cambia el estado a "Inactivo".
+⚠️ **IMPORTANTE:** Este endpoint NO elimina físicamente el recurso. En su lugar, cambia el estado a "Eliminado".
 
 ```json
 Response: 200 OK
@@ -455,8 +518,8 @@ Response: 200 OK
   "capacidad": 10,
   "tipoRecursoId": 1,
   "tipoRecursoNombre": "Sala de Reuniones",
-  "estadoRecursoId": 2,
-  "estadoRecursoNombre": "Inactivo"
+  "estadoRecursoId": 3,
+  "estadoRecursoNombre": "Eliminado"
 }
 
 Response: 404 NOT FOUND (recurso no existe)
@@ -660,7 +723,7 @@ Response: 404 NOT FOUND (usuario no existe)
 ### 5. **DELETE** `/api/v1/usuario/{id}`
 **Eliminar un usuario (Borrado Lógico)**
 
-⚠️ **IMPORTANTE:** Este endpoint NO elimina físicamente el usuario. En su lugar, cambia el estado a "Inactivo" y registra el cambio en el historial.
+⚠️ **IMPORTANTE:** Este endpoint NO elimina físicamente el usuario. En su lugar, cambia el estado a "Eliminado" y registra el cambio en el historial.
 
 ```json
 Response: 200 OK
@@ -669,8 +732,8 @@ Response: 200 OK
   "rut": "12345678-9",
   "nombre": "Juan Pérez",
   "email": "juan@example.com",
-  "estadoUsuarioId": 2,
-  "estadoUsuarioNombre": "Inactivo",
+  "estadoUsuarioId": 3,
+  "estadoUsuarioNombre": "Eliminado",
   "tipoUsuarioId": 1,
   "tipoUsuarioNombre": "Usuario Regular",
   "planId": 1,
@@ -1007,35 +1070,5 @@ curl -X GET http://localhost:8060/api/v1/usuario/nombre/juan
    - Constraints de base de datos: horario 9:00-21:00, días hábiles, mínimo 1 hora
 4. **CORS**: Habilitado para todos los orígenes (`@CrossOrigin(origins = "*")`)
 5. **Puerto**: La aplicación corre en el puerto `8060` (configurado en `application.properties`)
-
----
-
-## ⚠️ Requisitos Previos
-
-1. **Base de datos PostgreSQL** configurada con el esquema `reservas`
-
-2. **Estados de Reserva** en la base de datos:
-   - Debe existir un estado llamado "Cancelada" para el borrado lógico de reservas
-   - Recomendado: "Activa", "Cancelada", "Completada"
-
-3. **Estados de Recurso** en la base de datos:
-   - Debe existir un estado llamado "Inactivo" para el borrado lógico de recursos
-   - Recomendado: "Disponible", "Inactivo", "Mantenimiento", "Ocupado"
-
-4. **Tipos de Recurso** en la base de datos:
-   - Al menos 1 tipo de recurso (ej: "Sala de Reuniones", "Escritorio", "Sala de Conferencias")
-
-5. **Estados de Usuario** en la base de datos:
-   - Debe existir un estado llamado "Inactivo" para el borrado lógico de usuarios
-   - Recomendado: "Activo", "Inactivo", "Suspendido"
-
-6. **Tipos de Usuario** en la base de datos:
-   - Al menos 1 tipo de usuario (ej: "Usuario Regular", "Administrador")
-
-7. **Planes** en la base de datos:
-   - Los planes son opcionales para los usuarios (pueden ser NULL)
-   - Recomendado: "Plan Básico", "Plan Premium", "Plan Empresarial"
-
-8. **Datos de prueba** cargados (usuarios, recursos, planes, etc.)
 
 ---
