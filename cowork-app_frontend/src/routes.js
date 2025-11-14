@@ -2,7 +2,8 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import Home from "./pages/home";
 import Usuarios from "./pages/Usuarios";
-import Reservas from "./pages/Reservas";
+import ReservasCrear from "./pages/ReservasCrear";
+import ReservasAdmin from "./pages/ReservasAdmin";
 import Recursos from "./pages/Recursos";
 
 function AppRoutes() {
@@ -14,7 +15,8 @@ function AppRoutes() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/usuarios" element={<Usuarios />} />
-            <Route path="/reservas" element={<Reservas />} />
+            <Route path="/reservas/crear" element={<ReservasCrear />} />
+            <Route path="/reservas/admin" element={<ReservasAdmin />} />
             <Route path="/recursos" element={<Recursos />} />
           </Routes>
         </div>

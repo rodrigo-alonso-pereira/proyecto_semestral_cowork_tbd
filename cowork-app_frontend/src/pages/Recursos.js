@@ -1,10 +1,18 @@
 import React, { useState, useEffect } from "react";
-import recursosData from "../data/recursos.json";
 import { Modal, Button, Form } from "react-bootstrap";
 import { FaEdit, FaTrashAlt } from "react-icons/fa";
+import {
+  getAllRecursos,
+  createRecurso,
+  updateRecurso,
+} from "../services/recursoService";
+import { getAllTiposRecurso } from "../services/tipoRecursoService";
+import { getAllEstadosRecurso } from "../services/estadoRecursoService";
 
 export default function Recursos() {
   const [recursos, setRecursos] = useState([]);
+  const [tiposRecurso, setTiposRecurso] = useState([]);
+  const [estadosRecurso, setEstadosRecurso] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [selectedRecurso, setSelectedRecurso] = useState(null);
@@ -14,72 +22,132 @@ export default function Recursos() {
     nombre: "",
     precio: "",
     capacidad: "",
-    tipoRecurso: { id: 1, nombre: "Sala de reuniones" },
-    estadoRecurso: { id: 1, nombre: "Disponible" },
+    tipoRecurso: { id: null, nombre: "" },
+    estadoRecurso: { id: null, nombre: "" },
   });
 
-  // Cargar datos simulados
+  // 🔹 Cargar datos al iniciar
   useEffect(() => {
-    const activos = recursosData.filter(r => r.activo === true);
-    setRecursos(activos);
-    }, []);
+    cargarRecursos();
+    cargarTiposRecurso();
+    cargarEstadosRecurso();
+  }, []);
 
-  // Manejo de cambios en formulario
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
+  const cargarRecursos = async () => {
+    try {
+      const res = await getAllRecursos();
+      const activos = res.data
+        .filter((r) => r.estadoRecursoId !== 4)
+        .sort((a, b) => a.id - b.id);
+      setRecursos(activos);
+    } catch (error) {
+      console.error("❌ Error al cargar recursos:", error);
+      alert("Error al cargar recursos. Verifique la conexión.");
+    }
   };
 
-  // Crear o actualizar recurso
-  const handleSave = () => {
-    if (formData.id) {
-      // Actualizar
-      setRecursos(
-        recursos.map((r) => (r.id === formData.id ? { ...formData } : r))
-      );
-    } else {
-      // Crear nuevo
-      const newRecurso = { ...formData, id: Date.now() };
-      setRecursos([...recursos, newRecurso]);
+  const cargarTiposRecurso = async () => {
+    try {
+      const res = await getAllTiposRecurso();
+      setTiposRecurso(res.data);
+    } catch (error) {
+      console.error("❌ Error al cargar tipos de recurso:", error);
     }
+  };
 
-    setShowModal(false);
+  const cargarEstadosRecurso = async () => {
+    try {
+      const res = await getAllEstadosRecurso();
+      setEstadosRecurso(res.data);
+    } catch (error) {
+      console.error("❌ Error al cargar estados de recurso:", error);
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((f) => ({ ...f, [name]: value }));
+  };
+
+  const handleSave = async () => {
+    try {
+      if (!formData.nombre || !formData.precio || !formData.capacidad) {
+        alert("⚠️ Complete todos los campos obligatorios.");
+        return;
+      }
+
+      const payload = {
+        nombre: formData.nombre.trim(),
+        precio: Number(formData.precio),
+        capacidad: Number(formData.capacidad),
+        tipoRecursoId: formData.tipoRecurso.id,
+        estadoRecursoId: formData.estadoRecurso.id,
+      };
+
+      if (formData.id) {
+        await updateRecurso(formData.id, payload);
+        alert("✅ Recurso actualizado correctamente");
+      } else {
+        await createRecurso(payload);
+        alert("✅ Recurso creado correctamente");
+      }
+
+      await cargarRecursos();
+      resetForm();
+      setShowModal(false);
+    } catch (error) {
+      console.error("❌ Error al guardar recurso:", error.response?.data || error.message);
+      alert("No se pudo guardar el recurso. Verifique los datos.");
+    }
+  };
+
+  const resetForm = () => {
     setFormData({
       id: "",
       nombre: "",
       precio: "",
       capacidad: "",
-      tipoRecurso: { id: 1, nombre: "Sala de reuniones" },
-      estadoRecurso: { id: 1, nombre: "Disponible" },
+      tipoRecurso: { id: null, nombre: "" },
+      estadoRecurso: { id: null, nombre: "" },
     });
   };
 
-  // Editar recurso
-  const handleEdit = (recurso) => {
-    setFormData(recurso);
-    setSelectedRecurso(recurso);
+  const handleEdit = (r) => {
+    setFormData({
+      id: r.id,
+      nombre: r.nombre,
+      precio: r.precio,
+      capacidad: r.capacidad,
+      tipoRecurso: { id: r.tipoRecursoId, nombre: r.tipoRecursoNombre },
+      estadoRecurso: { id: r.estadoRecursoId, nombre: r.estadoRecursoNombre },
+    });
+    setSelectedRecurso(r);
     setShowModal(true);
   };
 
-  // Eliminar recurso
-  const handleDelete = (recurso) => {
-    setSelectedRecurso(recurso);
+  const handleDelete = (r) => {
+    setSelectedRecurso(r);
     setShowDelete(true);
   };
 
-  const confirmDelete = () => {
-  // Marcar el recurso como inactivo (activo = false)
-  setRecursos(prev =>
-    prev
-      .map(r => (r.id === selectedRecurso.id ? { ...r, activo: false } : r))
-      .filter(r => r.activo === true) // solo mantener activos en pantalla
-  );
-  setShowDelete(false);
-  setSelectedRecurso(null);
-};
+  const confirmDelete = async () => {
+    try {
+      const payload = {
+        nombre: selectedRecurso.nombre,
+        precio: selectedRecurso.precio,
+        capacidad: selectedRecurso.capacidad,
+        tipoRecursoId: selectedRecurso.tipoRecursoId,
+        estadoRecursoId: 4, // 4 = Eliminado
+      };
+      await updateRecurso(selectedRecurso.id, payload);
+      alert(`🗑️ Recurso "${selectedRecurso.nombre}" eliminado.`);
+      await cargarRecursos();
+      setShowDelete(false);
+    } catch (error) {
+      console.error("❌ Error al eliminar recurso:", error);
+      alert("No se pudo eliminar el recurso.");
+    }
+  };
 
   return (
     <div className="container mt-4">
@@ -90,7 +158,6 @@ export default function Recursos() {
         </Button>
       </div>
 
-      {/* Tabla */}
       <table className="table table-hover">
         <thead className="table-dark">
           <tr>
@@ -108,16 +175,15 @@ export default function Recursos() {
             <tr key={r.id}>
               <td>{r.id}</td>
               <td>{r.nombre}</td>
-              <td>{r.tipoRecurso.nombre}</td>
+              <td>{r.tipoRecursoNombre}</td>
               <td>{r.capacidad}</td>
               <td>${r.precio.toLocaleString("es-CL")}</td>
-              <td>{r.estadoRecurso.nombre}</td>
+              <td>{r.estadoRecursoNombre}</td>
               <td>
                 <Button
                   variant="outline-primary"
                   size="sm"
                   className="me-2"
-                  title="Editar recurso"
                   onClick={() => handleEdit(r)}
                 >
                   <FaEdit />
@@ -125,7 +191,6 @@ export default function Recursos() {
                 <Button
                   variant="outline-danger"
                   size="sm"
-                  title="Eliminar recurso"
                   onClick={() => handleDelete(r)}
                 >
                   <FaTrashAlt />
@@ -137,11 +202,9 @@ export default function Recursos() {
       </table>
 
       {/* Modal Crear/Editar */}
-      <Modal show={showModal} onHide={() => setShowModal(false)}>
+      <Modal show={showModal} onHide={() => setShowModal(false)} centered>
         <Modal.Header closeButton>
-          <Modal.Title>
-            {formData.id ? "Editar Recurso" : "Crear Recurso"}
-          </Modal.Title>
+          <Modal.Title>{formData.id ? "Editar Recurso" : "Crear Recurso"}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form>
@@ -152,7 +215,6 @@ export default function Recursos() {
                 name="nombre"
                 value={formData.nombre}
                 onChange={handleChange}
-                placeholder="Ej: Sala de reuniones A"
               />
             </Form.Group>
 
@@ -163,7 +225,6 @@ export default function Recursos() {
                 name="precio"
                 value={formData.precio}
                 onChange={handleChange}
-                placeholder="Ej: 10000"
               />
             </Form.Group>
 
@@ -174,33 +235,25 @@ export default function Recursos() {
                 name="capacidad"
                 value={formData.capacidad}
                 onChange={handleChange}
-                placeholder="Ej: 4"
               />
             </Form.Group>
 
             <Form.Group className="mb-3">
-              <Form.Label>Tipo de recurso</Form.Label>
+              <Form.Label>Tipo de Recurso</Form.Label>
               <Form.Select
                 name="tipoRecurso"
-                value={formData.tipoRecurso.nombre}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    tipoRecurso: {
-                      id:
-                        e.target.value === "Sala de reuniones"
-                          ? 1
-                          : e.target.value === "Cabina telefónica"
-                          ? 2
-                          : 3,
-                      nombre: e.target.value,
-                    },
-                  })
-                }
+                value={formData.tipoRecurso?.id || ""}
+                onChange={(e) => {
+                  const sel = tiposRecurso.find((t) => t.id === Number(e.target.value));
+                  setFormData((f) => ({ ...f, tipoRecurso: sel }));
+                }}
               >
-                <option>Sala de reuniones</option>
-                <option>Cabina telefónica</option>
-                <option>Estudio</option>
+                <option value="">Seleccione tipo</option>
+                {tiposRecurso.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.nombre}
+                  </option>
+                ))}
               </Form.Select>
             </Form.Group>
 
@@ -208,19 +261,18 @@ export default function Recursos() {
               <Form.Label>Estado</Form.Label>
               <Form.Select
                 name="estadoRecurso"
-                value={formData.estadoRecurso.nombre}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    estadoRecurso: {
-                      id: e.target.value === "Disponible" ? 1 : 2,
-                      nombre: e.target.value,
-                    },
-                  })
-                }
+                value={formData.estadoRecurso?.id || ""}
+                onChange={(e) => {
+                  const sel = estadosRecurso.find((t) => t.id === Number(e.target.value));
+                  setFormData((f) => ({ ...f, estadoRecurso: sel }));
+                }}
               >
-                <option>Disponible</option>
-                <option>En mantenimiento</option>
+                <option value="">Seleccione estado</option>
+                {estadosRecurso.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.nombre}
+                  </option>
+                ))}
               </Form.Select>
             </Form.Group>
           </Form>
@@ -235,13 +287,13 @@ export default function Recursos() {
         </Modal.Footer>
       </Modal>
 
-      {/* Modal de eliminación */}
-      <Modal show={showDelete} onHide={() => setShowDelete(false)}>
+      {/* Modal Eliminar */}
+      <Modal show={showDelete} onHide={() => setShowDelete(false)} centered>
         <Modal.Header closeButton>
           <Modal.Title>Confirmar Eliminación</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          ¿Estás seguro que deseas eliminar el recurso{" "}
+          ¿Seguro que deseas eliminar el recurso{" "}
           <strong>{selectedRecurso?.nombre}</strong>?
         </Modal.Body>
         <Modal.Footer>
