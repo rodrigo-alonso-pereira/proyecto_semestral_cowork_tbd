@@ -81,6 +81,7 @@ CREATE TABLE Factura (
     Numero_factura BIGINT NOT NULL UNIQUE,
     Fecha_emision DATE NOT NULL DEFAULT CURRENT_DATE,
     Total BIGINT NOT NULL CHECK (Total >= 0),
+    Descripcion VARCHAR(500),
     Usuario_id BIGINT NOT NULL,
     Estado_factura_id BIGINT NOT NULL,
     CONSTRAINT fk_factura_usuario FOREIGN KEY (Usuario_id)
