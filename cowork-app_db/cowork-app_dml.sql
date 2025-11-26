@@ -125,11 +125,10 @@ INSERT INTO Reserva (Inicio_reserva, Termino_reserva, Fecha_creacion, Valor, Usu
 ('2025-11-05 09:00:00', '2025-11-05 10:00:00', '2025-11-05', 5000, 5, 2, 3);    -- Cecilia, Hot Desk 02, Completada
 
 -- 6. FACTURAS (Hija de Usuario)
-INSERT INTO Factura (Numero_factura, Fecha_emision, Total, Usuario_id, Estado_factura_id) VALUES
-(20250001, '2025-10-10', 120000, 3, 2), -- Pagada - Ana
-(20250002, '2025-11-09', 75000, 5, 1),  -- Pendiente - Cecilia
-(20250003, '2025-10-25', 15000, 9, 2),  -- Pagada - Gabriela
-(20250004, '2025-11-09', 35000, 4, 2),  -- Pagada - Benito
-(20250005, '2025-11-14', 120000, 6, 1); -- Pendiente - David (fecha futura)
+INSERT INTO Factura (Numero_factura, Fecha_emision, Total, Usuario_id, Estado_factura_id, Descripcion) VALUES
+(1, '2025-10-10', 120000, 3, 2, 'Oficina Privada 03 (5.00h)'), 
+(2, '2025-11-09', 75000, 5, 1, 'Estudio Podcast (2.00h), Hot Desk 02 (1.00h)'),  
+(3, '2025-10-25', 15000, 9, 2, 'Sala de reuniones Mediana (1.00h)'),  
+(4, '2025-11-09', 35000, 4, 2, 'Hot Desk 01 (2.00h), Oficina Privada 02 (2.00h)');
 
 COMMIT;
