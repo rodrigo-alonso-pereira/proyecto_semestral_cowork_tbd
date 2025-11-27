@@ -1,5 +1,7 @@
 package cl.usach.tbd.coworkapp_backend.controller;
 
+import cl.usach.tbd.coworkapp_backend.dto.LoginRequestDTO;
+import cl.usach.tbd.coworkapp_backend.dto.LoginResponseDTO;
 import cl.usach.tbd.coworkapp_backend.dto.UsuarioCreateDTO;
 import cl.usach.tbd.coworkapp_backend.dto.UsuarioResponseDTO;
 import cl.usach.tbd.coworkapp_backend.dto.UsuarioUpdateDTO;
@@ -182,6 +184,22 @@ public class UsuarioController {
         try {
             List<UsuarioResponseDTO> usuarios = usuarioService.getUsuariosByNombre(nombre);
             return ResponseEntity.ok(usuarios);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * POST /api/v1/usuario/login
+     * Login de usuario con email y password
+     */
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO loginRequest) {
+        try {
+            LoginResponseDTO response = usuarioService.login(loginRequest);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }

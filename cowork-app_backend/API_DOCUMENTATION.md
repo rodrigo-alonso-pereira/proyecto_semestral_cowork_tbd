@@ -898,6 +898,43 @@ Response: 200 OK
 
 **Nota:** Búsqueda case-insensitive. "juan" encuentra "Juan Pérez", "JUAN García", etc.
 
+### 12. **POST** `/api/v1/usuario/login`
+Login de usuario con email y password
+
+**Descripción:** Valida las credenciales de un usuario y retorna su información si son correctas.
+
+```json
+Request Body:
+{
+  "email": "juan@example.com",
+  "password": "password123"
+}
+
+Response: 200 OK
+{
+  "id": 1,
+  "nombre": "Juan Pérez",
+  "email": "juan@example.com",
+  "tipoUsuarioId": 1,
+  "tipoUsuarioNombre": "Usuario Regular",
+  "planId": 1,
+  "planNombre": "Plan Básico"
+}
+
+Response: 401 UNAUTHORIZED (credenciales incorrectas o usuario inactivo)
+```
+
+**Validaciones:**
+- Email y password son obligatorios
+- El usuario debe existir en la base de datos
+- El password debe coincidir con el almacenado
+- El usuario debe estar en estado "Activo"
+- El usuario no debe estar "Eliminado"
+
+**Nota de seguridad:** 
+- El password NO se retorna en la respuesta
+- En producción, los passwords deben estar hasheados (actualmente se comparan en texto plano)
+
 ---
 
 ## 🔌 Endpoints de Catálogos
@@ -1025,183 +1062,6 @@ java -jar target/cowork-app_backend-0.0.1-SNAPSHOT.jar
 3. **La API estará disponible en:**
 ```
 http://localhost:8080/api/v1/reserva
-```
-
----
-
-## 🧪 Probar la API
-
-### Con curl:
-
-**Obtener todas las reservas:**
-```bash
-curl -X GET http://localhost:8060/api/v1/reserva
-```
-
-**Crear una reserva:**
-```bash
-curl -X POST http://localhost:8060/api/v1/reserva \
-  -H "Content-Type: application/json" \
-  -d '{
-    "inicioReserva": "2025-11-10T10:00:00",
-    "terminoReserva": "2025-11-10T12:00:00",
-    "valor": 50000,
-    "usuarioId": 1,
-    "recursoId": 1,
-    "estadoReservaId": 1
-  }'
-```
-
-**Actualizar una reserva:**
-```bash
-curl -X PUT http://localhost:8060/api/v1/reserva/1 \
-  -H "Content-Type: application/json" \
-  -d '{
-    "estadoReservaId": 2,
-    "valor": 60000
-  }'
-```
-
-**Cancelar una reserva (borrado lógico):**
-```bash
-curl -X DELETE http://localhost:8060/api/v1/reserva/1
-```
-
-**Buscar reservas por usuario:**
-```bash
-curl -X GET http://localhost:8060/api/v1/reserva/usuario/1
-```
-
-**Buscar reservas por estado:**
-```bash
-curl -X GET http://localhost:8060/api/v1/reserva/estado-reserva/1
-```
-
-**Buscar reservas por fecha:**
-```bash
-curl -X GET http://localhost:8060/api/v1/reserva/fecha/2025-11-10
-```
-
-### Ejemplos para Recurso:
-
-**Obtener todos los recursos:**
-```bash
-curl -X GET http://localhost:8060/api/v1/recurso
-```
-
-**Crear un recurso:**
-```bash
-curl -X POST http://localhost:8060/api/v1/recurso \
-  -H "Content-Type: application/json" \
-  -d '{
-    "nombre": "Sala de Reuniones A",
-    "precio": 50000,
-    "capacidad": 10,
-    "tipoRecursoId": 1,
-    "estadoRecursoId": 1
-  }'
-```
-
-**Actualizar un recurso:**
-```bash
-curl -X PUT http://localhost:8060/api/v1/recurso/1 \
-  -H "Content-Type: application/json" \
-  -d '{
-    "precio": 60000,
-    "capacidad": 15
-  }'
-```
-
-**Eliminar recurso (borrado lógico):**
-```bash
-curl -X DELETE http://localhost:8060/api/v1/recurso/1
-```
-
-**Buscar recursos por tipo:**
-```bash
-curl -X GET http://localhost:8060/api/v1/recurso/tipo/1
-```
-
-**Buscar recursos por estado:**
-```bash
-curl -X GET http://localhost:8060/api/v1/recurso/estado/1
-```
-
-**Buscar recursos por nombre:**
-```bash
-curl -X GET http://localhost:8060/api/v1/recurso/nombre/sala
-```
-
-**Buscar recursos por capacidad mínima:**
-```bash
-curl -X GET http://localhost:8060/api/v1/recurso/capacidad/10
-```
-
-### Ejemplos para Usuario:
-
-**Obtener todos los usuarios:**
-```bash
-curl -X GET http://localhost:8060/api/v1/usuario
-```
-
-**Crear un usuario:**
-```bash
-curl -X POST http://localhost:8060/api/v1/usuario \
-  -H "Content-Type: application/json" \
-  -d '{
-    "rut": "12345678-9",
-    "nombre": "Juan Pérez",
-    "password": "password123",
-    "email": "juan@example.com",
-    "estadoUsuarioId": 1,
-    "tipoUsuarioId": 1,
-    "planId": 1
-  }'
-```
-
-**Actualizar un usuario:**
-```bash
-curl -X PUT http://localhost:8060/api/v1/usuario/1 \
-  -H "Content-Type: application/json" \
-  -d '{
-    "nombre": "Juan Pérez Actualizado",
-    "estadoUsuarioId": 2
-  }'
-```
-
-**Eliminar usuario (borrado lógico):**
-```bash
-curl -X DELETE http://localhost:8060/api/v1/usuario/1
-```
-
-**Buscar usuario por RUT:**
-```bash
-curl -X GET http://localhost:8060/api/v1/usuario/rut/12345678-9
-```
-
-**Buscar usuario por email:**
-```bash
-curl -X GET http://localhost:8060/api/v1/usuario/email/juan@example.com
-```
-
-**Buscar usuarios por estado:**
-```bash
-curl -X GET http://localhost:8060/api/v1/usuario/estado/1
-```
-
-**Buscar usuarios por tipo:**
-```bash
-curl -X GET http://localhost:8060/api/v1/usuario/tipo/1
-```
-
-**Buscar usuarios por plan:**
-```bash
-curl -X GET http://localhost:8060/api/v1/usuario/plan/1
-```
-
-**Buscar usuarios por nombre:**
-```bash
-curl -X GET http://localhost:8060/api/v1/usuario/nombre/juan
 ```
 
 ---

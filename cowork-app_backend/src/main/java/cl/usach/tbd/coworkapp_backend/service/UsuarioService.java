@@ -1,5 +1,7 @@
 package cl.usach.tbd.coworkapp_backend.service;
 
+import cl.usach.tbd.coworkapp_backend.dto.LoginRequestDTO;
+import cl.usach.tbd.coworkapp_backend.dto.LoginResponseDTO;
 import cl.usach.tbd.coworkapp_backend.dto.UsuarioCreateDTO;
 import cl.usach.tbd.coworkapp_backend.dto.UsuarioResponseDTO;
 import cl.usach.tbd.coworkapp_backend.dto.UsuarioUpdateDTO;
@@ -45,6 +47,43 @@ public class UsuarioService {
                 .filter(this::isNotDeleted)
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Validar credenciales de usuario para login
+     */
+    @Transactional(readOnly = true)
+    public LoginResponseDTO login(LoginRequestDTO loginRequest) {
+        // Validar que vengan email y password
+        if (loginRequest.getEmail() == null || loginRequest.getEmail().trim().isEmpty()) {
+            throw new RuntimeException("El email es obligatorio");
+        }
+
+        if (loginRequest.getPassword() == null || loginRequest.getPassword().trim().isEmpty()) {
+            throw new RuntimeException("La contraseña es obligatoria");
+        }
+
+        // Buscar usuario por email
+        Usuario usuario = usuarioRepository.findByEmail(loginRequest.getEmail().trim().toLowerCase())
+                .orElseThrow(() -> new RuntimeException("Credenciales inválidas"));
+
+        // Validar que el usuario no esté eliminado
+        if (!isNotDeleted(usuario)) {
+            throw new RuntimeException("Usuario no activo");
+        }
+
+        // Validar contraseña (en producción debería comparar hashes)
+        if (!usuario.getPassword().equals(loginRequest.getPassword())) {
+            throw new RuntimeException("Credenciales inválidas");
+        }
+
+        // Validar que el usuario esté activo
+        if (!usuario.getEstadoUsuario().getNombre().equalsIgnoreCase("Activo")) {
+            throw new RuntimeException("Usuario no activo");
+        }
+
+        // Convertir a LoginResponseDTO
+        return convertToLoginResponseDTO(usuario);
     }
 
     @Transactional(readOnly = true)
@@ -276,6 +315,22 @@ public class UsuarioService {
         dto.setEmail(usuario.getEmail());
         dto.setEstadoUsuarioId(usuario.getEstadoUsuario().getId());
         dto.setEstadoUsuarioNombre(usuario.getEstadoUsuario().getNombre());
+        dto.setTipoUsuarioId(usuario.getTipoUsuario().getId());
+        dto.setTipoUsuarioNombre(usuario.getTipoUsuario().getNombre());
+
+        if (usuario.getPlan() != null) {
+            dto.setPlanId(usuario.getPlan().getId());
+            dto.setPlanNombre(usuario.getPlan().getNombre());
+        }
+
+        return dto;
+    }
+
+    private LoginResponseDTO convertToLoginResponseDTO(Usuario usuario) {
+        LoginResponseDTO dto = new LoginResponseDTO();
+        dto.setId(usuario.getId());
+        dto.setNombre(usuario.getNombre());
+        dto.setEmail(usuario.getEmail());
         dto.setTipoUsuarioId(usuario.getTipoUsuario().getId());
         dto.setTipoUsuarioNombre(usuario.getTipoUsuario().getNombre());
 
