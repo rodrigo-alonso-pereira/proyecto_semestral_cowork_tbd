@@ -1,5 +1,6 @@
 package cl.usach.tbd.coworkapp_backend.service;
 
+import cl.usach.tbd.coworkapp_backend.dto.HorasRestantesDTO;
 import cl.usach.tbd.coworkapp_backend.dto.LoginRequestDTO;
 import cl.usach.tbd.coworkapp_backend.dto.LoginResponseDTO;
 import cl.usach.tbd.coworkapp_backend.dto.UsuarioCreateDTO;
@@ -19,7 +20,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -298,6 +301,51 @@ public class UsuarioService {
                 .filter(this::isNotDeleted)
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Obtener horas restantes del plan del usuario en el mes actual
+     */
+    @Transactional(readOnly = true)
+    public HorasRestantesDTO getHorasRestantesMesActual(Long usuarioId) {
+        Optional<Map<String, Object>> resultado = usuarioRepository.findHorasRestantesMesActual(usuarioId);
+
+        if (resultado.isEmpty()) {
+            throw new RuntimeException("Usuario no encontrado con id: " + usuarioId);
+        }
+
+        Map<String, Object> data = resultado.get();
+
+        HorasRestantesDTO dto = new HorasRestantesDTO();
+        dto.setNombreUsuario((String) data.get("nombre_usuario"));
+        dto.setEmailUsuario((String) data.get("email_usuario"));
+        dto.setNombrePlan((String) data.get("nombre_plan"));
+        dto.setHorasIncluidas((Integer) data.get("horas_incluidas"));
+
+        // Convertir BigDecimal/Double a Long
+        Object horasUsadasObj = data.get("horas_usadas");
+        Long horasUsadas = 0L;
+        if (horasUsadasObj != null) {
+            if (horasUsadasObj instanceof BigDecimal) {
+                horasUsadas = ((BigDecimal) horasUsadasObj).longValue();
+            } else if (horasUsadasObj instanceof Number) {
+                horasUsadas = ((Number) horasUsadasObj).longValue();
+            }
+        }
+        dto.setHorasUsadas(horasUsadas);
+
+        Object horasRestantesObj = data.get("horas_restantes");
+        Long horasRestantes = 0L;
+        if (horasRestantesObj != null) {
+            if (horasRestantesObj instanceof BigDecimal) {
+                horasRestantes = ((BigDecimal) horasRestantesObj).longValue();
+            } else if (horasRestantesObj instanceof Number) {
+                horasRestantes = ((Number) horasRestantesObj).longValue();
+            }
+        }
+        dto.setHorasRestantes(horasRestantes);
+
+        return dto;
     }
 
     /**

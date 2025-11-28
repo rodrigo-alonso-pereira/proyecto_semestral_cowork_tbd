@@ -812,6 +812,52 @@ Response: 401 UNAUTHORIZED (credenciales incorrectas o usuario inactivo)
 - El password NO se retorna en la respuesta
 - En producción, los passwords deben estar hasheados (actualmente se comparan en texto plano)
 
+### 13. **GET** `/api/v1/usuario/{id}/horas-restantes`
+Obtener horas restantes del plan del usuario en el mes actual
+
+**Descripción:** Calcula cuántas horas le quedan disponibles al usuario de su plan en el mes actual, considerando las reservas activas y completadas.
+
+```json
+Ejemplo: GET /api/v1/usuario/4/horas-restantes
+
+Response: 200 OK
+{
+  "nombreUsuario": "Juan Pérez",
+  "emailUsuario": "juan@example.com",
+  "nombrePlan": "Plan Básico",
+  "horasIncluidas": 50,
+  "horasUsadas": 12,
+  "horasRestantes": 38
+}
+
+Response: 404 NOT FOUND (usuario no encontrado)
+```
+
+**Funcionamiento:**
+- Solo cuenta reservas con estado **Activa (1)** o **Completada (3)**
+- Calcula automáticamente el mes y año actual usando `CURRENT_DATE`
+- Suma las horas de diferencia entre `termino_reserva` e `inicio_reserva`
+- Resta las horas usadas del total de horas incluidas en el plan
+
+**Validaciones:**
+- El usuario debe existir en la base de datos
+- El usuario debe tener un plan asociado
+
+**⚠️ Nota importante sobre usuarios sin plan:**
+Los usuarios **sin plan** pueden obtener **horas restantes negativas**, ya que no tienen horas incluidas en su plan (`horasIncluidas` será `null` o `0`). Esto **NO es un error**, es el comportamiento esperado para este tipo de cliente. La API retornará valores negativos indicando las horas consumidas sin plan contratado.
+
+Ejemplo de usuario sin plan:
+```json
+{
+  "nombreUsuario": "Usuario Sin Plan",
+  "emailUsuario": "sinplan@example.com",
+  "nombrePlan": null,
+  "horasIncluidas": 0,
+  "horasUsadas": 5,
+  "horasRestantes": -5
+}
+```
+
 ---
 
 ## 🔌 Endpoints de Plan
@@ -1196,6 +1242,7 @@ http://localhost:8080/api/v1/reserva
 5. **Puerto**: La aplicación corre en el puerto `8060` (configurado en `application.properties`)
 6. **Borrado Lógico**: 
    - **Reserva, Recurso, Usuario**: Cambian estado a "Eliminado"
-   - **Plan**: Cambia campo `activo` a `false`7. **Queries JPQL**: Las facturas utilizan queries JPQL con `EXTRACT` para filtrar por mes y año
+   - **Plan**: Cambia campo `activo` a `false`
+7. **Queries JPQL**: Las facturas utilizan queries JPQL con `EXTRACT` para filtrar por mes y año
 8. **Actualización de Estado**: Factura usa PATCH para actualizar solo el estado (no toda la entidad)
----
+9. **Horas Restantes**: El endpoint `/api/v1/usuario/{id}/horas-restantes` usa una query nativa con CTE (Common Table Expression) para calcular las horas disponibles del mes actual. Los usuarios **sin plan** pueden obtener valores negativos, lo cual es el comportamiento esperado.

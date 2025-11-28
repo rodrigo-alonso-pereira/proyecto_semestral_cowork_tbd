@@ -1,5 +1,6 @@
 package cl.usach.tbd.coworkapp_backend.controller;
 
+import cl.usach.tbd.coworkapp_backend.dto.HorasRestantesDTO;
 import cl.usach.tbd.coworkapp_backend.dto.LoginRequestDTO;
 import cl.usach.tbd.coworkapp_backend.dto.LoginResponseDTO;
 import cl.usach.tbd.coworkapp_backend.dto.UsuarioCreateDTO;
@@ -200,6 +201,22 @@ public class UsuarioController {
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * GET /api/v1/usuario/{id}/horas-restantes
+     * Obtener horas restantes del plan del usuario en el mes actual
+     */
+    @GetMapping("/{id}/horas-restantes")
+    public ResponseEntity<HorasRestantesDTO> getHorasRestantesMesActual(@PathVariable Long id) {
+        try {
+            HorasRestantesDTO horasRestantes = usuarioService.getHorasRestantesMesActual(id);
+            return ResponseEntity.ok(horasRestantes);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
