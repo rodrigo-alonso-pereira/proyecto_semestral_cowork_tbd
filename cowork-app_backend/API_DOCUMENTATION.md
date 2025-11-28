@@ -3,7 +3,7 @@
 ## ✅ Estado del Proyecto
 El proyecto ha sido **compilado exitosamente** y está listo para usar.
 
-**Última actualización:** 12 de Noviembre, 2025
+**Última actualización:** 27 de Noviembre, 2025
 
 ---
 
@@ -47,129 +47,6 @@ El sistema implementa **borrado lógico** para las tres entidades principales (R
    - `GET /api/v1/usuario/estado/{idEstadoEliminado}`
 
 5. **Historial de cambios de estado (solo Usuario)**: Cuando se cambia el estado de un usuario (incluyendo eliminación), se registra automáticamente en la tabla `Historial_Estado_Usuario`.
-
-### Ejemplo práctico:
-
-```bash
-# Crear un recurso
-curl -X POST http://localhost:8060/api/v1/recurso \
-  -H "Content-Type: application/json" \
-  -d '{"nombre": "Sala A", "precio": 50000, "capacidad": 10, "tipoRecursoId": 1, "estadoRecursoId": 1}'
-# Respuesta: {"id": 1, ..., "estadoRecursoNombre": "Disponible"}
-
-# Obtener el recurso - FUNCIONA
-curl -X GET http://localhost:8060/api/v1/recurso/1
-# Respuesta: 200 OK - {"id": 1, ..., "estadoRecursoNombre": "Disponible"}
-
-# Eliminar el recurso (borrado lógico)
-curl -X DELETE http://localhost:8060/api/v1/recurso/1
-# Respuesta: 200 OK - {"id": 1, ..., "estadoRecursoNombre": "Eliminado"}
-
-# Intentar obtener el recurso - NO FUNCIONA (filtrado automático)
-curl -X GET http://localhost:8060/api/v1/recurso/1
-# Respuesta: 404 NOT FOUND - "Recurso no encontrado con id: 1"
-
-# Obtener todos los recursos - NO incluye el recurso eliminado
-curl -X GET http://localhost:8060/api/v1/recurso
-# Respuesta: [] (o lista sin el recurso id:1)
-
-# Ver el recurso eliminado buscando por estado "Eliminado" (ID asumido: 3)
-curl -X GET http://localhost:8060/api/v1/recurso/estado/3
-# Respuesta: [{"id": 1, ..., "estadoRecursoNombre": "Eliminado"}]
-```
-
----
-
-## 📁 Estructura Completa del Proyecto
-
-### Entidades (Entity Layer)
-
-#### Entidades de Catálogo:
-- `Plan.java` - Planes de suscripción (con campo `activo` para soft delete)
-- `EstadoUsuario.java` - Estados de usuarios (Activo, Inactivo, Suspendido, etc.)
-- `TipoUsuario.java` - Tipos de usuarios (Administrador, Usuario Regular, etc.)
-- `TipoRecurso.java` - Tipos de recursos (Sala de Reuniones, Escritorio, etc.)
-- `EstadoRecurso.java` - Estados de recursos (Disponible, Mantenimiento, etc.)
-- `EstadoReserva.java` - **[NUEVO]** Estados de reservas (Activa, Cancelada, Completada)
-- `EstadoFactura.java` - **[NUEVO]** Estados de facturas (Pagada, Pendiente, Vencida)
-
-#### Entidades Principales:
-- `Usuario.java` - Usuarios del sistema
-- `Recurso.java` - Recursos disponibles para reservar
-- `Reserva.java` - **Entidad principal de reservas (ACTUALIZADA)**
-- `Factura.java` - **[NUEVO]** Facturas de los usuarios
-- `HistorialEstadoUsuario.java` - **[NUEVO]** Auditoría de cambios de estado de usuarios
-
-### DTOs (Data Transfer Objects)
-
-#### Reserva:
-- `ReservaResponseDTO.java` - DTO para respuestas de reservas (con `LocalDateTime` y estado de reserva)
-- `ReservaCreateDTO.java` - DTO para crear nuevas reservas (requiere `estadoReservaId`)
-- `ReservaUpdateDTO.java` - DTO para actualizar reservas existentes
-
-#### Recurso:
-- `RecursoResponseDTO.java` - DTO para respuestas de recursos (incluye tipo y estado)
-- `RecursoCreateDTO.java` - DTO para crear nuevos recursos
-- `RecursoUpdateDTO.java` - DTO para actualizar recursos existentes
-
-#### Usuario:
-- `UsuarioResponseDTO.java` - DTO para respuestas de usuarios (sin password, incluye estado, tipo y plan)
-- `UsuarioCreateDTO.java` - DTO para crear nuevos usuarios
-- `UsuarioUpdateDTO.java` - DTO para actualizar usuarios existentes
-
-#### Catálogos:
-- `TipoUsuarioResponseDTO.java` - DTO para respuestas de tipos de usuario
-- `EstadoUsuarioResponseDTO.java` - DTO para respuestas de estados de usuario
-- `PlanResponseDTO.java` - DTO para respuestas de planes
-- `TipoRecursoResponseDTO.java` - DTO para respuestas de tipos de recurso
-- `EstadoRecursoResponseDTO.java` - DTO para respuestas de estados de recurso
-- `EstadoReservaResponseDTO.java` - DTO para respuestas de estados de reserva
-- `EstadoFacturaResponseDTO.java` - DTO para respuestas de estados de factura
-
-### Repositories
-
-#### Repositorios de Reserva:
-- `ReservaRepository.java` - Repositorio con métodos de consulta personalizados
-- `EstadoReservaRepository.java` - Repositorio para estados de reserva
-
-#### Repositorios de Recurso:
-- `RecursoRepository.java` - Repositorio con métodos de búsqueda por tipo, estado, nombre y capacidad
-- `EstadoRecursoRepository.java` - Repositorio para estados de recurso
-- `TipoRecursoRepository.java` - Repositorio para tipos de recurso
-
-#### Repositorios de Usuario:
-- `UsuarioRepository.java` - Repositorio con métodos de búsqueda por RUT, email, estado, tipo, plan y nombre
-- `EstadoUsuarioRepository.java` - Repositorio para estados de usuario
-- `TipoUsuarioRepository.java` - Repositorio para tipos de usuario
-- `PlanRepository.java` - Repositorio para planes
-- `HistorialEstadoUsuarioRepository.java` - Repositorio para historial de cambios de estado
-
-#### Repositorios de Catálogo Adicionales:
-- `EstadoFacturaRepository.java` - Repositorio para estados de factura
-
-### Service Layer
-- `ReservaService.java` - Lógica de negocio para el CRUD de reservas
-- `RecursoService.java` - Lógica de negocio para el CRUD de recursos
-- `UsuarioService.java` - Lógica de negocio para el CRUD de usuarios (incluye registro de historial)
-- `TipoUsuarioService.java` - Servicio para consulta de tipos de usuario
-- `EstadoUsuarioService.java` - Servicio para consulta de estados de usuario
-- `PlanService.java` - Servicio para consulta de planes
-- `TipoRecursoService.java` - Servicio para consulta de tipos de recurso
-- `EstadoRecursoService.java` - Servicio para consulta de estados de recurso
-- `EstadoReservaService.java` - Servicio para consulta de estados de reserva
-- `EstadoFacturaService.java` - Servicio para consulta de estados de factura
-
-### Controller Layer
-- `ReservaController.java` - Controlador REST para reservas
-- `RecursoController.java` - Controlador REST para recursos
-- `UsuarioController.java` - Controlador REST para usuarios
-- `TipoUsuarioController.java` - Controlador REST para tipos de usuario
-- `EstadoUsuarioController.java` - Controlador REST para estados de usuario
-- `PlanController.java` - Controlador REST para planes
-- `TipoRecursoController.java` - Controlador REST para tipos de recurso
-- `EstadoRecursoController.java` - Controlador REST para estados de recurso
-- `EstadoReservaController.java` - Controlador REST para estados de reserva
-- `EstadoFacturaController.java` - Controlador REST para estados de factura
 
 ---
 
@@ -937,6 +814,124 @@ Response: 401 UNAUTHORIZED (credenciales incorrectas o usuario inactivo)
 
 ---
 
+## 🔌 Endpoints de Plan
+
+### Base URL: `/api/v1/plan`
+
+### 1. **GET** `/api/v1/plan`
+Obtener todos los planes activos
+```json
+Response: 200 OK
+[
+  {
+    "id": 1,
+    "nombre": "Plan Básico",
+    "precioMensual": 50000,
+    "tiempoIncluido": 20,
+    "activo": true
+  },
+  {
+    "id": 2,
+    "nombre": "Plan Premium",
+    "precioMensual": 100000,
+    "tiempoIncluido": 50,
+    "activo": true
+  }
+]
+```
+
+### 2. **GET** `/api/v1/plan/{id}`
+Obtener un plan por ID
+```json
+Response: 200 OK
+{
+  "id": 1,
+  "nombre": "Plan Básico",
+  "precioMensual": 50000,
+  "tiempoIncluido": 20,
+  "activo": true
+}
+
+Response: 404 NOT FOUND (plan no existe o está inactivo)
+```
+
+### 3. **POST** `/api/v1/plan`
+Crear un nuevo plan
+```json
+Request Body:
+{
+  "nombre": "Plan Empresarial",
+  "precioMensual": 200000,
+  "tiempoIncluido": 100,
+  "activo": true
+}
+
+Response: 201 CREATED (plan creado exitosamente)
+Response: 400 BAD REQUEST (datos inválidos)
+```
+
+**Validaciones:**
+- El nombre es obligatorio y no puede estar vacío
+- El nombre debe ser único (no puede existir otro plan con el mismo nombre)
+- El precio mensual debe ser >= 0
+- El tiempo incluido debe ser >= 0
+- Si no se proporciona `activo`, se establece en `true` por defecto
+
+### 4. **PUT** `/api/v1/plan/{id}`
+Actualizar un plan existente
+```json
+Request Body:
+{
+  "nombre": "Plan Básico Plus",
+  "precioMensual": 60000,
+  "tiempoIncluido": 25,
+  "activo": true
+}
+
+Response: 200 OK (plan actualizado)
+Response: 404 NOT FOUND (plan no existe)
+Response: 400 BAD REQUEST (datos inválidos)
+```
+
+**Nota:** Todos los campos son opcionales en el update.
+
+### 5. **DELETE** `/api/v1/plan/{id}`
+**Eliminar un plan (Borrado Lógico)**
+
+⚠️ **IMPORTANTE:** Este endpoint NO elimina físicamente el plan. En su lugar, cambia el campo `activo` a `false`.
+
+```json
+Response: 200 OK
+{
+  "id": 1,
+  "nombre": "Plan Básico",
+  "precioMensual": 50000,
+  "tiempoIncluido": 20,
+  "activo": false
+}
+
+Response: 404 NOT FOUND (plan no existe)
+```
+
+### 6. **GET** `/api/v1/plan/nombre/{nombre}`
+Obtener plan por nombre
+```json
+Ejemplo: GET /api/v1/plan/nombre/Plan Básico
+
+Response: 200 OK
+{
+  "id": 1,
+  "nombre": "Plan Básico",
+  "precioMensual": 50000,
+  "tiempoIncluido": 20,
+  "activo": true
+}
+
+Response: 404 NOT FOUND (plan no existe o está inactivo)
+```
+
+---
+
 ## 🔌 Endpoints de Catálogos
 
 ### Base URL: `/api/v1/[catalogo]`
@@ -973,9 +968,13 @@ Response: 200 OK
 
 **GET** `/api/v1/plan` - Obtener todos los planes (excluye inactivos)
 **GET** `/api/v1/plan/{id}` - Obtener un plan por ID
+**POST** `/api/v1/plan` - Crear un nuevo plan
+**PUT** `/api/v1/plan/{id}` - Actualizar un plan existente
+**DELETE** `/api/v1/plan/{id}` - Eliminar un plan (borrado lógico - cambia activo a false)
+**GET** `/api/v1/plan/nombre/{nombre}` - Obtener un plan por nombre
 
 ```json
-Response: 200 OK
+Response GET: 200 OK
 {
   "id": 1,
   "nombre": "Plan Básico",
@@ -983,7 +982,21 @@ Response: 200 OK
   "tiempoIncluido": 20,
   "activo": true
 }
+
+Request POST/PUT:
+{
+  "nombre": "Plan Premium",
+  "precioMensual": 100000,
+  "tiempoIncluido": 50,
+  "activo": true
+}
 ```
+
+**Validaciones:**
+- Nombre es obligatorio y único
+- Precio mensual debe ser >= 0
+- Tiempo incluido debe ser >= 0
+- Borrado lógico: cambia `activo` a false
 
 ### 4. Tipo de Recurso
 
@@ -1037,27 +1050,7 @@ Response: 200 OK
 }
 ```
 
-**Nota sobre catálogos:**
-- Todos los endpoints de catálogo son de **solo lectura** (GET únicamente)
-- Filtran automáticamente registros inactivos o eliminados
-- Útiles para poblar dropdowns en el frontend
-- Retornan 404 si el registro no existe o está inactivo/eliminado
-
 ---
-
-## 🚀 Cómo Ejecutar
-
-1. **Asegúrate de que la base de datos esté configurada correctamente** en `application.properties`
-
-2. **Ejecutar la aplicación:**
-```bash
-mvn spring-boot:run
-```
-
-O ejecutar el JAR empaquetado:
-```bash
-java -jar target/cowork-app_backend-0.0.1-SNAPSHOT.jar
-```
 
 3. **La API estará disponible en:**
 ```
@@ -1076,5 +1069,6 @@ http://localhost:8080/api/v1/reserva
    - Constraints de base de datos: horario 9:00-21:00, días hábiles, mínimo 1 hora
 4. **CORS**: Habilitado para todos los orígenes (`@CrossOrigin(origins = "*")`)
 5. **Puerto**: La aplicación corre en el puerto `8060` (configurado en `application.properties`)
-
----
+6. **Borrado Lógico**: 
+   - **Reserva, Recurso, Usuario**: Cambian estado a "Eliminado"
+   - **Plan**: Cambia campo `activo` a `false`
