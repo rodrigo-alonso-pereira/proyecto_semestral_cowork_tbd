@@ -1,4 +1,4 @@
-# API REST - Sistema de Reservas Cowork-App
+# API REST - Sistema de Reservas Cowork-App v2.1.0
 
 ## ✅ Estado del Proyecto
 El proyecto ha sido **compilado exitosamente** y está listo para usar.
