@@ -932,6 +932,131 @@ Response: 404 NOT FOUND (plan no existe o está inactivo)
 
 ---
 
+## 🔌 Endpoints de Factura
+
+### Base URL: `/api/v1/factura`
+
+### 1. **GET** `/api/v1/factura`
+Obtener todas las facturas del sistema
+```json
+Response: 200 OK
+[
+  {
+    "id": 1,
+    "numeroFactura": 1001,
+    "fechaEmision": "2025-11-27",
+    "total": 50000,
+    "descripcion": "Factura mensual noviembre",
+    "usuarioId": 1,
+    "usuarioNombre": "Juan Pérez",
+    "estadoFacturaId": 1,
+    "estadoFacturaNombre": "Pagada"
+  }
+]
+```
+
+### 2. **GET** `/api/v1/factura/mes/{mes}/anio/{anio}`
+Obtener todas las facturas por mes y año
+```json
+Ejemplo: GET /api/v1/factura/mes/11/anio/2025
+
+Response: 200 OK
+[
+  {
+    "id": 1,
+    "numeroFactura": 1001,
+    "fechaEmision": "2025-11-27",
+    "total": 50000,
+    "descripcion": "Factura mensual noviembre",
+    "usuarioId": 1,
+    "usuarioNombre": "Juan Pérez",
+    "estadoFacturaId": 1,
+    "estadoFacturaNombre": "Pagada"
+  }
+]
+
+Response: 400 BAD REQUEST (mes o año inválidos)
+```
+
+**Validaciones:**
+- Mes debe estar entre 1 y 12
+- Año debe estar entre 2000 y 2100
+
+### 3. **GET** `/api/v1/factura/usuario/{usuarioId}`
+Obtener todas las facturas de un usuario específico
+```json
+Ejemplo: GET /api/v1/factura/usuario/1
+
+Response: 200 OK (array de facturas del usuario)
+```
+
+### 4. **GET** `/api/v1/factura/usuario/{usuarioId}/mes/{mes}/anio/{anio}`
+Obtener todas las facturas de un usuario en un mes específico
+```json
+Ejemplo: GET /api/v1/factura/usuario/1/mes/11/anio/2025
+
+Response: 200 OK (array de facturas del usuario en el mes especificado)
+Response: 400 BAD REQUEST (mes o año inválidos)
+```
+
+**Validaciones:**
+- Mes debe estar entre 1 y 12
+- Año debe estar entre 2000 y 2100
+
+### 5. **GET** `/api/v1/factura/numero/{numeroFactura}`
+Obtener factura por número de factura (único)
+```json
+Ejemplo: GET /api/v1/factura/numero/1001
+
+Response: 200 OK
+{
+  "id": 1,
+  "numeroFactura": 1001,
+  "fechaEmision": "2025-11-27",
+  "total": 50000,
+  "descripcion": "Factura mensual noviembre",
+  "usuarioId": 1,
+  "usuarioNombre": "Juan Pérez",
+  "estadoFacturaId": 1,
+  "estadoFacturaNombre": "Pagada"
+}
+
+Response: 404 NOT FOUND (factura no encontrada)
+```
+
+### 6. **PATCH** `/api/v1/factura/{id}/estado`
+Actualizar el estado de una factura
+```json
+Request Body:
+{
+  "estadoFacturaId": 2
+}
+
+Response: 200 OK
+{
+  "id": 1,
+  "numeroFactura": 1001,
+  "fechaEmision": "2025-11-27",
+  "total": 50000,
+  "descripcion": "Factura mensual noviembre",
+  "usuarioId": 1,
+  "usuarioNombre": "Juan Pérez",
+  "estadoFacturaId": 2,
+  "estadoFacturaNombre": "Pendiente"
+}
+
+Response: 404 NOT FOUND (factura o estado no encontrado)
+```
+
+**Validaciones:**
+- La factura debe existir
+- El estadoFacturaId es obligatorio
+- El estado de factura debe existir en el sistema
+
+**Nota:** Se usa PATCH en lugar de PUT porque solo se actualiza el estado, no toda la factura.
+
+---
+
 ## 🔌 Endpoints de Catálogos
 
 ### Base URL: `/api/v1/[catalogo]`
@@ -1071,4 +1196,6 @@ http://localhost:8080/api/v1/reserva
 5. **Puerto**: La aplicación corre en el puerto `8060` (configurado en `application.properties`)
 6. **Borrado Lógico**: 
    - **Reserva, Recurso, Usuario**: Cambian estado a "Eliminado"
-   - **Plan**: Cambia campo `activo` a `false`
+   - **Plan**: Cambia campo `activo` a `false`7. **Queries JPQL**: Las facturas utilizan queries JPQL con `EXTRACT` para filtrar por mes y año
+8. **Actualización de Estado**: Factura usa PATCH para actualizar solo el estado (no toda la entidad)
+---
