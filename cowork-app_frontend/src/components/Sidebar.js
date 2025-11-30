@@ -89,6 +89,19 @@ function Sidebar() {
                     </Link>
                   </li>
                 )}
+                 {/* Mis reservas: solo Cliente */}
+                {role === "CLIENTE" && (
+                  <li className="mb-1">
+                    <Link
+                      to="/reservas/mis-reservas"
+                      className={`nav-link text-white ${
+                        location.pathname === "/reservas/mis-reservas" ? "active" : ""
+                      }`}
+                    >
+                      Mis reservas
+                    </Link>
+                  </li>
+                )}
 
                 {/* Administración reservas: solo Admin */}
                 {role === "ADMIN" && (

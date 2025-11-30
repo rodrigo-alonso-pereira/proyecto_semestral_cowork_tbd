@@ -6,7 +6,8 @@ import ReservasCrear from "./pages/ReservasCrear";
 import ReservasAdmin from "./pages/ReservasAdmin";
 import Recursos from "./pages/Recursos";
 import ProtectedRoute from "./components/ProtectedRoute";
-import Login from "./pages/Login";   
+import Login from "./pages/Login";  
+import MisReservas from "./pages/MisReservas"; 
 
 
 function PrivateLayout() {
@@ -46,6 +47,15 @@ function AppRoutes() {
             element={
               <ProtectedRoute allowedRoles={["CLIENTE"]}>
                 <ReservasCrear />
+              </ProtectedRoute>
+            }
+          />
+          {/* Solo CLIENTE: Mis reservas */}
+          <Route
+            path="/reservas/mis-reservas"
+            element={
+              <ProtectedRoute allowedRoles={["CLIENTE"]}>
+                <MisReservas />
               </ProtectedRoute>
             }
           />
