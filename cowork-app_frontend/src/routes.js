@@ -8,6 +8,7 @@ import Recursos from "./pages/Recursos";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/Login";  
 import MisReservas from "./pages/MisReservas"; 
+import MiPlan from "./pages/MiPlan";
 
 
 function PrivateLayout() {
@@ -56,6 +57,15 @@ function AppRoutes() {
             element={
               <ProtectedRoute allowedRoles={["CLIENTE"]}>
                 <MisReservas />
+              </ProtectedRoute>
+            }
+          />
+          {/* Mi plan: solo Cliente */}
+          <Route
+            path="/mi-plan"
+            element={
+              <ProtectedRoute allowedRoles={["CLIENTE"]}>
+                <MiPlan />
               </ProtectedRoute>
             }
           />

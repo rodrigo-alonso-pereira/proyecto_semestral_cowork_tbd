@@ -120,6 +120,19 @@ function Sidebar() {
             )}
           </li>
         )}
+        {/* Mi plan: solo Cliente */}
+        {role === "CLIENTE" && (
+          <li className="nav-item">
+            <Link
+              to="/mi-plan"
+              className={`nav-link text-white ${
+                location.pathname === "/mi-plan" ? "active" : ""
+              }`}
+            >
+              📊 Mi plan
+            </Link>
+          </li>
+        )}
         {/* Usuarios: solo Admin */}
         {role === "ADMIN" && (
           <li className="mb-2">
