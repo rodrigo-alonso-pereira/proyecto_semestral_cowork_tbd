@@ -154,3 +154,13 @@ CREATE TABLE Reserva (
         AND EXTRACT(SECOND FROM Termino_reserva) = 0)
 );
 
+-- Tabla staging para procesos ETL de importación de usuarios
+CREATE TABLE IF NOT EXISTS Usuario_import (
+    Rut_raw           TEXT      NOT NULL,
+    Nombre            TEXT      NOT NULL,
+    Password          TEXT      NOT NULL,
+    Email             TEXT      NOT NULL,
+    Estado_usuario_id INT       NOT NULL,
+    Tipo_usuario_id   INT       NOT NULL,
+    Plan_id           INT
+);

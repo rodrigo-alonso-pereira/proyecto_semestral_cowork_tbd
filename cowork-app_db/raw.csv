@@ -1,0 +1,9 @@
+Rut_raw,Nombre,Password,Email,Estado_usuario_id,Tipo_usuario_id,Plan_id
+145672345,Camila Torres,pass1,camila.torres@test.com,1,3,1
+987654321,Marco Ruiz,pass2,marco.ruiz@test.com,1,3,2
+763452189,Isidora Campos,pass3,isidora.campos@test.com,1,3,3
+847362514,Tomas Belmar,pass4,tomas.belmar@test.com,1,3,4
+564738291,Valentina Cornejo,pass5,valentina.cornejo@test.com,3,3,2
+912837465,Diego Morales,pass6,diego.morales@test.com,1,3,1
+736291845,Sofia Ibarra,pass7,sofia.ibarra@test.com,1,3,4
+829173564,Ricardo Vera,pass8,ricardo.vera@test.com,1,3,3

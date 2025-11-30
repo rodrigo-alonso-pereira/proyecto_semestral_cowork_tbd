@@ -126,3 +126,55 @@ AFTER UPDATE ON Reserva
 FOR EACH ROW
 WHEN (OLD.estado_reserva_id IS DISTINCT FROM NEW.estado_reserva_id)
 EXECUTE FUNCTION trg_actualizar_factura_reserva();
+
+
+-- ETL: IMPORTAR USUARIOS DESDE CSV
+-- CORRIGE RUT MAL FORMATEADO (SIN GUION)
+
+/*  Proceso de importación:
+    Se sube un archivo CSV desde el panel admin
+    El backend ejecuta: 
+        TRUNCATE TABLE Usuario_import;
+    Luego hace el COPY:
+        COPY Usuario_import (Rut_raw, Nombre, Password, Email, Estado_usuario_id, Tipo_usuario_id, Plan_id)
+        FROM '/cowork-app_db/raw.csv'
+        CSV HEADER;
+        SELECT fn_etl_importar_usuarios();
+    Listo: los usuarios quedan cargados, con el RUT corregido. 
+*/
+CREATE OR REPLACE FUNCTION fn_etl_importar_usuarios()
+RETURNS VOID AS $$
+BEGIN
+    WITH datos_limpios AS (
+        SELECT
+            regexp_replace(Rut_raw, '[^0-9kK]', '', 'g') AS rut_limpio,
+            Nombre,
+            Password,
+            Email,
+            Estado_usuario_id,
+            Tipo_usuario_id,
+            Plan_id
+        FROM Usuario_import
+    )
+    INSERT INTO Usuario (
+        Rut,
+        Nombre,
+        Password,
+        Email,
+        Estado_usuario_id,
+        Tipo_usuario_id,
+        Plan_id
+    )
+    SELECT
+        substring(rut_limpio FROM 1 FOR length(rut_limpio)-1)
+        || '-' ||
+        upper(substring(rut_limpio FROM length(rut_limpio) FOR 1)) AS Rut,
+        Nombre,
+        Password,
+        Email,
+        Estado_usuario_id,
+        Tipo_usuario_id,
+        Plan_id
+    FROM datos_limpios;
+END;
+$$ LANGUAGE plpgsql;
