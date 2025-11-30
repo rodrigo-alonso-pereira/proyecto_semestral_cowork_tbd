@@ -164,3 +164,9 @@ CREATE TABLE IF NOT EXISTS Usuario_import (
     Tipo_usuario_id   INT       NOT NULL,
     Plan_id           INT
 );
+
+-- Tabla para control de procesos de facturación automática
+CREATE TABLE IF NOT EXISTS Control_Facturacion (
+    id SERIAL PRIMARY KEY,
+    fecha_llamada TIMESTAMP NOT NULL DEFAULT NOW()
+);

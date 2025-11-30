@@ -1,7 +1,6 @@
 SET search_path TO reservas;
 
-
--- FUNCIÓN: Generar descripción de factura
+-- 1. FUNCIÓN: Generar descripción de factura
 CREATE OR REPLACE FUNCTION fn_generar_descripcion_factura(
     p_usuario_id BIGINT,
     p_fecha DATE
@@ -32,7 +31,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- FUNCIÓN: Crear factura por usuario/mes
+-- 2. FUNCIÓN: Crear factura por usuario/mes
 CREATE OR REPLACE FUNCTION fn_crear_factura_usuario_mes(
     p_usuario_id BIGINT,
     p_year INT,
@@ -101,8 +100,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
--- TRIGGER: al completar reserva → generar factura
+-- TRIGGER AL COMPLETAR RESERVA (COMENTADO YA QUE AHORA SE USA MENSUAL)
+/* -- 3. TRIGGER: al completar reserva → generar factura
 CREATE OR REPLACE FUNCTION trg_actualizar_factura_reserva()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -125,11 +124,47 @@ CREATE TRIGGER tg_reserva_completada_factura
 AFTER UPDATE ON Reserva
 FOR EACH ROW
 WHEN (OLD.estado_reserva_id IS DISTINCT FROM NEW.estado_reserva_id)
-EXECUTE FUNCTION trg_actualizar_factura_reserva();
+EXECUTE FUNCTION trg_actualizar_factura_reserva(); */
 
 
--- ETL: IMPORTAR USUARIOS DESDE CSV
--- CORRIGE RUT MAL FORMATEADO (SIN GUION)
+-- 4. FUNCIÓN: generar facturas para todos los clientes de un mes específico
+CREATE OR REPLACE FUNCTION fn_generar_facturas_mes(
+    p_year INT,
+    p_month INT
+)
+RETURNS VOID AS $$
+DECLARE
+    r_user RECORD;
+BEGIN
+    FOR r_user IN 
+        SELECT id
+        FROM Usuario
+        WHERE Tipo_usuario_id = 3  -- Clientes
+    LOOP
+        PERFORM fn_crear_factura_usuario_mes(r_user.id, p_year, p_month);
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 5. FUNCIÓN: llama a fn_generar_facturas_mes con año/mes actuales
+CREATE OR REPLACE FUNCTION trg_facturar_todos_mes_actual()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_year  INT := EXTRACT(YEAR  FROM CURRENT_DATE);
+    v_month INT := EXTRACT(MONTH FROM CURRENT_DATE);
+BEGIN
+    PERFORM fn_generar_facturas_mes(v_year, v_month);
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 6. TRIGGER: AL INSERTAR EN Control_Facturacion → FACTURAR A TODOS
+CREATE TRIGGER tg_facturar_al_insertar
+AFTER INSERT ON Control_Facturacion
+FOR EACH ROW
+EXECUTE FUNCTION trg_facturar_todos_mes_actual();
+
+-- 7. ETL: Importar usuarios desde CSV, limpiando el RUT (sin guión)
 
 /*  Proceso de importación:
     Se sube un archivo CSV desde el panel admin
