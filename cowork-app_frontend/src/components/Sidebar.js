@@ -133,6 +133,21 @@ function Sidebar() {
             </Link>
           </li>
         )}
+
+        {/* Mis facturas: solo Cliente */}
+        {role === "CLIENTE" && (
+          <li className="nav-item">
+            <Link
+              to="/mis-facturas"
+              className={`nav-link text-white ${
+                location.pathname === "/mis-facturas" ? "active" : ""
+              }`}
+            >
+              🧾 Mis facturas
+            </Link>
+          </li>
+        )}
+
         {/* Usuarios: solo Admin */}
         {role === "ADMIN" && (
           <li className="mb-2">
