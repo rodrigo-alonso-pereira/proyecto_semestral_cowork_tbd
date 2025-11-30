@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { FaUserFriends, FaCalendarAlt, FaDoorOpen, FaChevronDown } from "react-icons/fa";
+import { FaUserFriends, FaCalendarAlt, FaDoorOpen,FaChevronDown, FaHome,FaCreditCard,FaChartPie,FaFileInvoiceDollar, } from "react-icons/fa";
 import { useState } from "react";
 import "./Sidebar.css";
 import { useAuth } from "../context/AuthContext";
@@ -49,13 +49,16 @@ function Sidebar() {
       <ul className="nav nav-pills flex-column mb-auto">
         {/* Home para todos */}
         <li className="mb-2">
-          <Link
-            to="/"
-            className={`nav-link text-white ${location.pathname === "/" ? "active" : ""}`}
-          >
-            🏠 Inicio
-          </Link>
-        </li>
+        <Link
+          to="/"
+          className={`nav-link text-white ${
+            location.pathname === "/" ? "active" : ""
+          }`}
+        >
+          <FaHome className="me-2" />
+          Inicio
+        </Link>
+      </li>
 
           {/* Sección RESERVAS: visible si es Cliente o Admin */}
         {(role === "ADMIN" || role === "CLIENTE") && (
@@ -129,7 +132,8 @@ function Sidebar() {
                 location.pathname === "/mi-plan" ? "active" : ""
               }`}
             >
-              📊 Mi plan
+              <FaChartPie className="me-2" />
+              Mi plan
             </Link>
           </li>
         )}
@@ -143,10 +147,12 @@ function Sidebar() {
                 location.pathname === "/mis-facturas" ? "active" : ""
               }`}
             >
-              🧾 Mis facturas
+              <FaFileInvoiceDollar className="me-2" />
+              Mis facturas
             </Link>
           </li>
         )}
+
 
         {/* Usuarios: solo Admin */}
         {role === "ADMIN" && (
@@ -171,6 +177,20 @@ function Sidebar() {
             </Link>
           </li>
         )}
+        {/* Planes: solo Admin */}
+        {role === "ADMIN" && (
+        <li className="mb-2">
+          <Link
+            to="/planes"
+            className={`nav-link text-white ${
+              location.pathname === "/planes" ? "active" : ""
+            }`}
+          >
+            <FaCreditCard className="me-2" />
+            Planes
+          </Link>
+        </li>
+      )}
 
         
       </ul>

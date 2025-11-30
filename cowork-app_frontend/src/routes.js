@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import MisReservas from "./pages/MisReservas"; 
 import MiPlan from "./pages/MiPlan";
 import MisFacturas from "./pages/MisFacturas";
+import Planes from "./pages/Planes";
 
 
 function PrivateLayout() {
@@ -106,6 +107,15 @@ function AppRoutes() {
             element={
               <ProtectedRoute allowedRoles={["ADMIN"]}>
                 <Recursos />
+              </ProtectedRoute>
+            }
+          />
+          {/* Gestión de planes: solo Admin */}
+          <Route
+            path="/planes"
+            element={
+              <ProtectedRoute allowedRoles={["ADMIN"]}>
+                <Planes />
               </ProtectedRoute>
             }
           />
