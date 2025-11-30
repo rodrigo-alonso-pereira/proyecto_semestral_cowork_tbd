@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Form, Button, Card, Row, Col } from "react-bootstrap";
-import { getAllUsuarios } from "../services/usuarioService";
 import { getAllRecursos } from "../services/recursoService";
 import { getAllReservas, createReserva } from "../services/reservaService";
 import { getAllEstadosReserva } from "../services/estadoReservaService";
+import { useAuth } from "../context/AuthContext"; 
 
 export default function ReservasCrear() {
-  const [usuarios, setUsuarios] = useState([]);
   const [recursos, setRecursos] = useState([]);
   const [reservas, setReservas] = useState([]);
   const [estadosReserva, setEstadosReserva] = useState([]);
@@ -21,23 +20,14 @@ export default function ReservasCrear() {
   });
 
   const [bloquesDisponibles, setBloquesDisponibles] = useState([]);
+  const { currentUser, role } = useAuth();
 
   // 🔹 Cargar datos iniciales
   useEffect(() => {
-    cargarUsuarios();
     cargarRecursos();
     cargarReservas();
     cargarEstadosReserva();
   }, []);
-
-  const cargarUsuarios = async () => {
-    try {
-      const res = await getAllUsuarios();
-      setUsuarios(res.data.filter((u) => u.estadoUsuarioId === 1)); // Solo activos
-    } catch (error) {
-      console.error("❌ Error al cargar usuarios:", error);
-    }
-  };
 
   const cargarRecursos = async () => {
     try {
@@ -119,8 +109,11 @@ export default function ReservasCrear() {
 
 
   const handleSave = async () => {
-    if (!formData.usuario.id || !formData.recurso.id || !formData.horaInicio) {
-      alert("⚠️ Debes seleccionar usuario, recurso, fecha y horario.");
+    // 👇 Para CLIENTE, el usuario SIEMPRE es el currentUser
+    const usuarioId = currentUser?.id;
+
+    if (!usuarioId || !formData.recurso.id || !formData.horaInicio) {
+      alert("⚠️ Debes seleccionar recurso, fecha y horario.");
       return;
     }
 
@@ -128,23 +121,24 @@ export default function ReservasCrear() {
       (e) => e.nombre.toLowerCase() === "activa"
     );
 
-    // 🔹 1. Convertimos las horas seleccionadas a objetos Date
-    const inicioReservaLocal = new Date(`${formData.fecha}T${formData.horaInicio}:00`);
-    const terminoReservaLocal = new Date(`${formData.fecha}T${formData.horaFin}:00`);
+    if (!formData.fecha || !formData.horaInicio || !formData.horaFin) {
+      alert("⚠️ Debes seleccionar fecha y un bloque horario.");
+      return;
+    }
 
-    // 🔹 2. Función para ajustar a UTC-3 (resta 3 horas)
-    const ajustarZonaHoraria = (fecha) => {
-      const offsetMs = 3 * 60 * 60 * 1000; // 3 horas en milisegundos
-      return new Date(fecha.getTime() - offsetMs);
-    };
+    const inicioReservaStr = `${formData.fecha}T${formData.horaInicio}:00`;
+    const terminoReservaStr = `${formData.fecha}T${formData.horaFin}:00`;
 
-    // 🔹 3. Aplicamos el ajuste antes de enviarlo
-    const inicioReserva = ajustarZonaHoraria(inicioReservaLocal);
-    const terminoReserva = ajustarZonaHoraria(terminoReservaLocal);
+    const inicioReserva = new Date(inicioReservaStr);
+    const terminoReserva = new Date(terminoReservaStr);
 
-    // 🔹 4. Construimos el payload final
+    if (terminoReserva <= inicioReserva) {
+      alert("⚠️ La hora de término debe ser posterior a la hora de inicio.");
+      return;
+    }
+
     const payload = {
-      usuarioId: formData.usuario.id,
+      usuarioId, // 👈 SIEMPRE EL currentUser
       recursoId: formData.recurso.id,
       inicioReserva: inicioReserva.toISOString(),
       terminoReserva: terminoReserva.toISOString(),
@@ -176,23 +170,18 @@ export default function ReservasCrear() {
       <h2>Crear Reserva</h2>
 
       <Card className="p-4 mt-3 shadow-sm">
-        {/* Usuario */}
+        {/* Usuario (solo lectura, currentUser) */}
         <Form.Group className="mb-3">
           <Form.Label>Usuario</Form.Label>
-          <Form.Select
-            value={formData.usuario.id || ""}
-            onChange={(e) => {
-              const sel = usuarios.find((u) => u.id === Number(e.target.value));
-              setFormData((f) => ({ ...f, usuario: sel || { id: null, nombre: "" } }));
-            }}
-          >
-            <option value="">Seleccione un usuario</option>
-            {usuarios.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.nombre}
-              </option>
-            ))}
-          </Form.Select>
+          <Form.Control
+            type="text"
+            value={currentUser?.nombre || ""}
+            disabled
+            readOnly
+          />
+          <Form.Text className="text-muted">
+            La reserva se creará a nombre de este usuario.
+          </Form.Text>
         </Form.Group>
 
         {/* Recurso */}
@@ -272,7 +261,7 @@ export default function ReservasCrear() {
         {formData.horaInicio && (
           <Card className="mt-4 p-3 bg-light">
             <h5>Resumen de la reserva</h5>
-            <p><strong>Usuario:</strong> {formData.usuario.nombre}</p>
+            <p><strong>Usuario:</strong> {currentUser?.nombre}</p>
             <p><strong>Recurso:</strong> {formData.recurso.nombre}</p>
             <p><strong>Fecha:</strong> {formData.fecha}</p>
             <p><strong>Horario:</strong> {formData.horaInicio} - {formData.horaFin}</p>
