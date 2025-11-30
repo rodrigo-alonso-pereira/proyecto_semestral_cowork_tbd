@@ -4,6 +4,8 @@ import { getAllRecursos } from "../services/recursoService";
 import { getAllReservas, createReserva } from "../services/reservaService";
 import { getAllEstadosReserva } from "../services/estadoReservaService";
 import { useAuth } from "../context/AuthContext"; 
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 export default function ReservasCrear() {
   const [recursos, setRecursos] = useState([]);
@@ -116,6 +118,12 @@ export default function ReservasCrear() {
       alert("⚠️ Debes seleccionar recurso, fecha y horario.");
       return;
     }
+    // 🔒 Seguridad: evitar fines de semana
+    const diaSemana = new Date(formData.fecha).getDay();
+    if (diaSemana === 0 || diaSemana === 6) {
+      alert("Solo se pueden realizar reservas de lunes a viernes.");
+      return;
+    }
 
     const estadoActiva = estadosReserva.find(
       (e) => e.nombre.toLowerCase() === "activa"
@@ -170,19 +178,6 @@ export default function ReservasCrear() {
       <h2>Crear Reserva</h2>
 
       <Card className="p-4 mt-3 shadow-sm">
-        {/* Usuario (solo lectura, currentUser) */}
-        <Form.Group className="mb-3">
-          <Form.Label>Usuario</Form.Label>
-          <Form.Control
-            type="text"
-            value={currentUser?.nombre || ""}
-            disabled
-            readOnly
-          />
-          <Form.Text className="text-muted">
-            La reserva se creará a nombre de este usuario.
-          </Form.Text>
-        </Form.Group>
 
         {/* Recurso */}
         <Form.Group className="mb-3">
@@ -208,15 +203,44 @@ export default function ReservasCrear() {
 
         {/* Fecha */}
         <Form.Group className="mb-3">
-          <Form.Label>Fecha</Form.Label>
-          <Form.Control
-            type="date"
-            value={formData.fecha}
-            onChange={(e) =>
-              setFormData((f) => ({ ...f, fecha: e.target.value }))
+        <Form.Label>Fecha</Form.Label>
+
+        <DatePicker
+          selected={formData.fecha ? new Date(formData.fecha) : null}
+          onChange={(date) => {
+            if (!date) {
+              setFormData((f) => ({
+                ...f,
+                fecha: "",
+                horaInicio: "",
+                horaFin: "",
+              }));
+              setBloquesDisponibles([]);
+              return;
             }
-          />
-        </Form.Group>
+
+            // Guardamos la fecha en formato YYYY-MM-DD (como antes)
+            const yyyyMmDd = date.toISOString().split("T")[0];
+
+            setFormData((f) => ({
+              ...f,
+              fecha: yyyyMmDd,
+              horaInicio: "",
+              horaFin: "",
+            }));
+          }}
+          dateFormat="yyyy-MM-dd"
+          placeholderText="Seleccione una fecha"
+          className="form-control"
+          // 🔒 Aquí se deshabilitan sábados (6) y domingos (0)
+          filterDate={(date) => {
+            const day = date.getDay();
+            return day !== 0 && day !== 6; // solo deja lunes–viernes
+          }}
+          // Opcional: empezar el calendario en lunes
+          calendarStartDay={1}
+        />
+      </Form.Group>
 
         {/* Bloques horarios */}
         {bloquesDisponibles.length > 0 && (
