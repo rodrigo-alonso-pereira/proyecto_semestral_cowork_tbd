@@ -1,3 +1,51 @@
+--  COWORK-APP - QUERIES SQL
+
+SET search_path TO reservas;
+
+-- ===========================================================
+-- 1. KPIs - SELECT
+-- ===========================================================
+
+-- 1.1 Nuevos clientes en un período
+SELECT * 
+FROM kpi_nuevos_clientes_mes('2025-11-01', '2025-11-30');
+
+-- 1.2 Utilización real en un período
+SELECT *
+FROM kpi_utilizacion_real('2025-11-01', '2025-11-30');
+
+-- 1.3 Tasa de churn en un período
+SELECT *
+FROM kpi_churn_rate('2025-11-01', '2025-11-30');
+
+-- 1.4 Horas reservadas reales por reserva (vista base)
+SELECT *
+FROM kpi_reservas_reales
+ORDER BY reserva_id;
+
+-- 1.5 Cambios de estado de usuario (vista base)
+SELECT *
+FROM kpi_cambios_estado
+ORDER BY usuario_id, fecha_cambio_estado;
+
+-- ===========================================================
+-- 2. FUNCIONES DE FACTURACIÓN
+-- ===========================================================
+
+-- 2.1 Generar descripción de facturación de un usuario y mes
+SELECT fn_generar_descripcion_factura(3, '2025-11-01');
+
+-- 2.3 Generar todas las facturas del mes para todos los clientes
+SELECT fn_generar_facturas_mes(2025, 11);
+
+-- 2.4 (Opcional) Insertar en tabla de control para activar trigger
+-- trigger que genera facturas automáticamente al insertar en esta tabla
+-- los default values, dejando un registro de la fecha de la última ejecución
+INSERT INTO Control_Facturacion DEFAULT VALUES;
+
+-- ===========================================================
+-- Queries antiguas
+
 select *
 from estado_factura;
 select *
