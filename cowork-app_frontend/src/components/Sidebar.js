@@ -191,6 +191,20 @@ function Sidebar() {
           </Link>
         </li>
       )}
+      {/* Historial facturación: solo Admin */}
+      {role === "ADMIN" && (
+        <li className="mb-2">
+          <Link
+            to="/historial-facturacion"
+            className={`nav-link text-white ${
+              location.pathname === "/historial-facturacion" ? "active" : ""
+            }`}
+          >
+            <FaFileInvoiceDollar className="me-2" />
+            Historial facturación
+          </Link>
+        </li>
+      )}
 
         
       </ul>

@@ -11,6 +11,7 @@ import MisReservas from "./pages/MisReservas";
 import MiPlan from "./pages/MiPlan";
 import MisFacturas from "./pages/MisFacturas";
 import Planes from "./pages/Planes";
+import HistorialFacturacion from "./pages/HistorialFacturacion";
 
 
 function PrivateLayout() {
@@ -116,6 +117,15 @@ function AppRoutes() {
             element={
               <ProtectedRoute allowedRoles={["ADMIN"]}>
                 <Planes />
+              </ProtectedRoute>
+            }           
+          />
+          {/* Gestión de facturas: solo Admin */}
+          <Route
+            path="/historial-facturacion"
+            element={
+              <ProtectedRoute allowedRoles={["ADMIN"]}>
+                <HistorialFacturacion />
               </ProtectedRoute>
             }
           />

@@ -1,10 +1,10 @@
-// src/services/facturaService.js
 import api from "./api";
 
+// Historial admin: todas las facturas
+export const getAllFacturas = () => api.get("/factura");
 // Obtener todas las facturas de un usuario específico
 export const getFacturasByUsuario = (usuarioId) =>
   api.get(`/factura/usuario/${usuarioId}`);
 
-// (opcional, por si después quieres filtrar por mes/año)
-// export const getFacturasByUsuarioYPeriodo = (usuarioId, mes, anio) =>
-//   api.get(`/factura/usuario/${usuarioId}/mes/${mes}/anio/${anio}`);
+export const updateFacturaEstado = (id, estadoFacturaId) =>
+  api.patch(`/factura/${id}/estado`, { estadoFacturaId });
