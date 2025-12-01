@@ -32,15 +32,13 @@ ORDER BY usuario_id, fecha_cambio_estado;
 -- 2. FUNCIONES DE FACTURACIÓN
 -- ===========================================================
 
--- 2.1 Generar descripción de facturación de un usuario y mes
-SELECT fn_generar_descripcion_factura(3, '2025-11-01');
-
--- 2.3 Generar todas las facturas del mes para todos los clientes
+-- 2.1 Generar todas las facturas del mes para todos los clientes
 SELECT fn_generar_facturas_mes(2025, 11);
 
--- 2.4 (Opcional) Insertar en tabla de control para activar trigger
--- trigger que genera facturas automáticamente al insertar en esta tabla
--- los default values, dejando un registro de la fecha de la última ejecución
+-- 2.2 (Opcional) Generar facturas llamando a Control_Facturacion
+/* También se pueden crear las facturas  llamando a la 
+función Control_Facturacion con DEFAULT VALUES, lo cual
+ejecuta la generación de facturas para el mes actual, dejando un timestamp de cuándo se ejecutó por última vez. */
 INSERT INTO Control_Facturacion DEFAULT VALUES;
 
 -- ===========================================================
