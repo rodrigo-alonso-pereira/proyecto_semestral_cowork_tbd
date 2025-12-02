@@ -46,17 +46,17 @@ INSERT INTO Estado_Reserva (Nombre) VALUES
 ('Eliminado');
 
 -- Usuarios
-INSERT INTO Usuario (Rut, Nombre, Password, Email, Estado_usuario_id, Tipo_usuario_id, Plan_id) VALUES
-('99999999-9', 'Admin Jefe', 'hash_admin', 'admin@cowork.cl', 1, 1, NULL),
-('88888888-8', 'Javier Gerente', 'hash_gerente', 'javier.g@cowork.cl', 1, 2, NULL),
-('11111111-1', 'Ana Fernández', 'hash_ana', 'ana.f@mail.com', 1, 3, 3),
-('22222222-2', 'Benito Castro', 'hash_benito', 'benito.c@mail.com', 1, 3, 1),
-('33333333-3', 'Cecilia Díaz', 'hash_ceci', 'ceci.d@mail.com', 1, 3, 2),
-('44444444-4', 'David Riquelme', 'hash_david', 'david.r@mail.com', 3, 3, 3),
-('55555555-5', 'Elena Morales', 'hash_elena', 'elena.m@mail.com', 1, 3, 2),
-('66666666-6', 'Felipe Soto', 'hash_felipe', 'felipe.s@mail.com', 1, 3, 4),
-('77777777-7', 'Gabriela Peña', 'hash_gabi', 'gabi.p@mail.com', 1, 3, 4),
-('00000000-0', 'Héctor Vidal', 'hash_hector', 'hector.v@mail.com', 2, 3, 1);
+INSERT INTO Usuario (Rut, Nombre, Password, Email, fecha_creacion, Estado_usuario_id, Tipo_usuario_id, Plan_id) VALUES
+('99999999-9', 'Admin Jefe', 'hash_admin', 'admin@cowork.cl', '2025-11-10',1, 1, NULL),
+('88888888-8', 'Javier Gerente', 'hash_gerente', 'javier.g@cowork.cl', '2025-10-10',1, 2, NULL),
+('11111111-1', 'Ana Fernández', 'hash_ana', 'ana.f@mail.com', '2025-09-10',1, 3, 3),
+('22222222-2', 'Benito Castro', 'hash_benito', 'benito.c@mail.com', '2025-08-10',1, 3, 1),
+('33333333-3', 'Cecilia Díaz', 'hash_ceci', 'ceci.d@mail.com', '2025-07-10',1, 3, 2),
+('44444444-4', 'David Riquelme', 'hash_david', 'david.r@mail.com', '2025-06-10',3, 3, 3),
+('55555555-5', 'Elena Morales', 'hash_elena', 'elena.m@mail.com', '2025-05-10',1, 3, 2),
+('66666666-6', 'Felipe Soto', 'hash_felipe', 'felipe.s@mail.com', '2025-04-10',1, 3, 4),
+('77777777-7', 'Gabriela Peña', 'hash_gabi', 'gabi.p@mail.com', '2025-03-10',1, 3, 4),
+('00000000-0', 'Héctor Vidal', 'hash_hector', 'hector.v@mail.com', '2025-02-10',2, 3, 1);
 
 -- Historial estados
 INSERT INTO Historial_Estado_Usuario (Usuario_id, Estado_usuario_id, Fecha_cambio_estado) VALUES

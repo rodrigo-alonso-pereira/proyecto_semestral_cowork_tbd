@@ -40,6 +40,7 @@ CREATE TABLE Usuario (
     Nombre VARCHAR(200) NOT NULL,
     Password VARCHAR(200) NOT NULL,
     Email VARCHAR(200) NOT NULL UNIQUE,
+    Fecha_creacion DATE NOT NULL DEFAULT CURRENT_DATE,
     Estado_usuario_id BIGINT NOT NULL,
     Tipo_usuario_id BIGINT NOT NULL,
     Plan_id BIGINT,
@@ -266,7 +267,7 @@ $$ LANGUAGE plpgsql;
 lo que daba el mismo número de activos cada mes y distorsionaba el churn.
 Ahora se reconstruye el último estado del usuario antes de fecha_inicio,
 para contar solo quienes realmente estaban activos al inicio del período. */
-CREATE OR REPLACE FUNCTION kpi_churn_rate(
+CREATE OR REPLACE FUNCTION reservas.kpi_churn_rate(
     fecha_inicio DATE,
     fecha_fin DATE
 )
@@ -282,7 +283,7 @@ BEGIN
             MAX(CASE WHEN nombre = 'Activo' THEN id END) AS id_activo,
             MAX(CASE WHEN nombre = 'Inactivo' THEN id END) AS id_inactivo,
             MAX(CASE WHEN nombre = 'Suspendido' THEN id END) AS id_suspendido
-        FROM estado_usuario
+        FROM reservas.estado_usuario
     ),
 
     -- ESTADO REAL DEL USUARIO AL INICIO DEL PERÍODO
@@ -292,7 +293,7 @@ BEGIN
             COALESCE(
                 (
                     SELECT e.estado_usuario_id
-                    FROM kpi_cambios_estado e
+                    FROM reservas.kpi_cambios_estado e
                     WHERE e.usuario_id = u.id
                       AND e.fecha_cambio_estado < fecha_inicio
                     ORDER BY e.fecha_cambio_estado DESC
@@ -300,7 +301,7 @@ BEGIN
                 ),
                 u.estado_usuario_id
             ) AS estado_inicio
-        FROM usuario u
+        FROM reservas.usuario u
     ),
 
     -- CLIENTES ACTIVOS AL INICIO DEL PERÍODO
@@ -314,7 +315,7 @@ BEGIN
     -- BAJAS DURANTE EL PERÍODO
     bajas AS (
         SELECT DISTINCT e.usuario_id
-        FROM kpi_cambios_estado e
+        FROM reservas.kpi_cambios_estado e
         CROSS JOIN ids i
         WHERE e.fecha_cambio_estado BETWEEN fecha_inicio AND fecha_fin
           AND e.estado_anterior = i.id_activo
