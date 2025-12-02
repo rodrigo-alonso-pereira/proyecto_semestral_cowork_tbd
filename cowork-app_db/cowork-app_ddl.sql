@@ -266,7 +266,7 @@ $$ LANGUAGE plpgsql;
 lo que daba el mismo número de activos cada mes y distorsionaba el churn.
 Ahora se reconstruye el último estado del usuario antes de fecha_inicio,
 para contar solo quienes realmente estaban activos al inicio del período. */
-CREATE OR REPLACE FUNCTION reservas.kpi_churn_rate(
+CREATE OR REPLACE FUNCTION kpi_churn_rate(
     fecha_inicio DATE,
     fecha_fin DATE
 )
@@ -285,7 +285,7 @@ BEGIN
         FROM estado_usuario
     ),
 
-    -- ESTADO AL INICIO DE PERÍODO
+    -- ESTADO REAL DEL USUARIO AL INICIO DEL PERÍODO
     ultimo_estado AS (
         SELECT
             u.id AS usuario_id,
@@ -303,6 +303,7 @@ BEGIN
         FROM usuario u
     ),
 
+    -- CLIENTES ACTIVOS AL INICIO DEL PERÍODO
     activos_en_inicio AS (
         SELECT COUNT(*)::int AS total
         FROM ultimo_estado ue
@@ -321,8 +322,8 @@ BEGIN
     )
 
     SELECT
-        (SELECT COUNT(*) FROM bajas),
-        (SELECT total FROM activos_en_inicio),
+        (SELECT COUNT(*)::int FROM bajas) AS clientes_que_se_fueron,
+        (SELECT total FROM activos_en_inicio) AS clientes_activos_inicio,
         CASE
             WHEN (SELECT total FROM activos_en_inicio) = 0 THEN 0
             ELSE ROUND(
@@ -331,10 +332,9 @@ BEGIN
                 NULLIF((SELECT total FROM activos_en_inicio)::numeric,0)) * 100,
                 2
             )
-        END;
+        END AS churn_rate;
 END;
 $$ LANGUAGE plpgsql;
-
 
 -- ===========================================================
 -- 5. FUNCIONES DE FACTURACIÓN
