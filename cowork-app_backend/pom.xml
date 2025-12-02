@@ -10,7 +10,7 @@
     </parent>
     <groupId>cl.usach.tbd</groupId>
     <artifactId>cowork-app_backend</artifactId>
-    <version>v2.1.0</version>
+    <version>v2.2.0</version>
     <name>cowork-app_backend</name>
     <description>cowork-app_backend</description>
     <url/>
