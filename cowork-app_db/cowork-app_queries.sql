@@ -44,18 +44,12 @@ INSERT INTO Control_Facturacion DEFAULT VALUES;
 -- ===========================================================
 -- Queries antiguas
 
-select *
-from estado_factura;
-select *
-from estado_reserva;
-select *
-from estado_recurso;
-select *
-from estado_usuario;
-select *
-from tipo_recurso;
-select *
-from tipo_usuario;
+select * from estado_factura;
+select * from estado_reserva;
+select * from estado_recurso;
+select * from estado_usuario;
+select * from tipo_recurso;
+select * from tipo_usuario;
 select * from plan;
 select * from factura;
 select * from historial_estado_usuario;

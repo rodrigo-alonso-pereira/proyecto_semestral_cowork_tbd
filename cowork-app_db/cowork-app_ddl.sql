@@ -160,7 +160,7 @@ CREATE TABLE IF NOT EXISTS Control_Facturacion (
 -- 3. VISTAS KPI
 -- ===========================================================
 -- kpi que identifica los nuevos clientes
-CREATE OR REPLACE VIEW kpi_nuevos_clientes_base AS
+CREATE OR REPLACE VIEW reservas.kpi_nuevos_clientes_base AS
 WITH estados_cliente AS (
     SELECT
         heu.Usuario_id,
@@ -170,32 +170,32 @@ WITH estados_cliente AS (
             PARTITION BY heu.Usuario_id
             ORDER BY heu.Fecha_cambio_estado
         ) AS orden_cambio
-    FROM Historial_Estado_Usuario heu
-    JOIN Usuario u ON u.Id = heu.Usuario_id
-    JOIN Tipo_Usuario tu ON tu.Id = u.Tipo_usuario_id
+    FROM reservas.Historial_Estado_Usuario heu
+    JOIN reservas.Usuario u ON u.Id = heu.Usuario_id
+    JOIN reservas.Tipo_Usuario tu ON tu.Id = u.Tipo_usuario_id
     WHERE tu.Nombre = 'Cliente'
 )
 SELECT
     e.Usuario_id,
     e.Fecha_cambio_estado AS fecha_primer_estado_activo
 FROM estados_cliente e
-JOIN Estado_Usuario eu ON eu.Id = e.Estado_usuario_id
+JOIN reservas.Estado_Usuario eu ON eu.Id = e.Estado_usuario_id
 WHERE e.orden_cambio = 1
   AND eu.Nombre = 'Activo';
 
 -- kpi que calcula horas reservadas reales
-CREATE OR REPLACE VIEW kpi_reservas_reales AS
+CREATE OR REPLACE VIEW reservas.kpi_reservas_reales AS
 SELECT
     res.Id AS reserva_id,
     res.Inicio_reserva,
     res.Termino_reserva,
     EXTRACT(EPOCH FROM (res.Termino_reserva - res.Inicio_reserva)) / 3600.0
         AS horas_reservadas
-FROM Reserva res
+FROM reservas.Reserva res
 WHERE res.estado_reserva_id = 3;
 
 -- kpi que rastrea cambios de estado de usuario
-CREATE OR REPLACE VIEW kpi_cambios_estado AS
+CREATE OR REPLACE VIEW reservas.kpi_cambios_estado AS
 SELECT
     heu.Usuario_id,
     heu.Estado_usuario_id,
@@ -204,13 +204,13 @@ SELECT
         PARTITION BY heu.Usuario_id
         ORDER BY heu.Fecha_cambio_estado
     ) AS estado_anterior
-FROM Historial_Estado_Usuario heu;
+FROM reservas.Historial_Estado_Usuario heu;
 
 -- ===========================================================
 -- 4. FUNCIONES KPI
 -- ===========================================================
 -- 1. FUNCIÓN: Nuevos clientes en un período
-CREATE OR REPLACE FUNCTION kpi_nuevos_clientes_mes(
+CREATE OR REPLACE FUNCTION reservas.kpi_nuevos_clientes_mes(
     fecha_inicio DATE,
     fecha_fin DATE
 )
@@ -218,13 +218,13 @@ RETURNS TABLE(nuevos_clientes INTEGER) AS $$
 BEGIN
     RETURN QUERY
     SELECT COUNT(*)::int
-    FROM kpi_nuevos_clientes_base
+    FROM reservas.kpi_nuevos_clientes_base
     WHERE fecha_primer_estado_activo BETWEEN fecha_inicio AND fecha_fin;
 END;
 $$ LANGUAGE plpgsql;
 
 -- 2. FUNCIÓN: Utilización real de recursos en un período
-CREATE OR REPLACE FUNCTION kpi_utilizacion_real(
+CREATE OR REPLACE FUNCTION reservas.kpi_utilizacion_real(
     fecha_inicio DATE,
     fecha_fin    DATE
 )
@@ -246,7 +246,7 @@ BEGIN
     ),
     horas_reservadas_cte AS (
         SELECT COALESCE(SUM(horas_reservadas),0)::numeric AS horas
-        FROM kpi_reservas_reales
+        FROM reservas.kpi_reservas_reales
         WHERE inicio_reserva::date BETWEEN fecha_inicio AND fecha_fin
     )
     SELECT
@@ -262,7 +262,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- 3. FUNCIÓN: Tasa de churn en un período
-CREATE OR REPLACE FUNCTION kpi_churn_rate(
+CREATE OR REPLACE FUNCTION reservas.kpi_churn_rate(
     fecha_inicio DATE,
     fecha_fin DATE
 )
@@ -278,17 +278,17 @@ BEGIN
             MAX(CASE WHEN nombre = 'Activo' THEN id END) AS id_activo,
             MAX(CASE WHEN nombre = 'Inactivo' THEN id END) AS id_inactivo,
             MAX(CASE WHEN nombre = 'Suspendido' THEN id END) AS id_suspendido
-        FROM estado_usuario
+        FROM reservas.estado_usuario
     ),
     activos AS (
         SELECT COUNT(*)::int AS total
-        FROM usuario u
-        JOIN estado_usuario eu ON eu.id = u.estado_usuario_id
+        FROM reservas.usuario u
+        JOIN reservas.estado_usuario eu ON eu.id = u.estado_usuario_id
         WHERE eu.nombre = 'Activo'
     ),
     bajas AS (
         SELECT DISTINCT e.usuario_id
-        FROM kpi_cambios_estado e
+        FROM reservas.kpi_cambios_estado e
         CROSS JOIN ids i
         WHERE e.fecha_cambio_estado BETWEEN fecha_inicio AND fecha_fin
           AND e.estado_anterior = i.id_activo
@@ -313,7 +313,7 @@ $$ LANGUAGE plpgsql;
 -- 5. FUNCIONES DE FACTURACIÓN
 -- ===========================================================
 -- 1. FUNCIÓN: Generar descripción de factura
-CREATE OR REPLACE FUNCTION fn_generar_descripcion_factura(
+CREATE OR REPLACE FUNCTION reservas.fn_generar_descripcion_factura(
     p_usuario_id BIGINT,
     p_fecha DATE
 )
@@ -346,7 +346,7 @@ $$ LANGUAGE plpgsql;
 
 
 -- 2. FUNCIÓN: Crear factura por usuario/mes
-CREATE OR REPLACE FUNCTION fn_crear_factura_usuario_mes(
+CREATE OR REPLACE FUNCTION reservas.fn_crear_factura_usuario_mes(
     p_usuario_id BIGINT,
     p_year INT,
     p_month INT
@@ -384,7 +384,7 @@ BEGIN
     FROM Estado_Factura
     WHERE nombre = 'Pendiente';
 
-    v_descripcion := fn_generar_descripcion_factura(p_usuario_id, v_periodo);
+    v_descripcion := reservas.fn_generar_descripcion_factura(p_usuario_id, v_periodo);
 
     INSERT INTO Factura (
         Numero_factura,
@@ -409,7 +409,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- 3. FUNCIÓN: Generar facturas para todos los usuarios clientes de un mes
-CREATE OR REPLACE FUNCTION fn_generar_facturas_mes(
+CREATE OR REPLACE FUNCTION reservas.fn_generar_facturas_mes(
     p_year INT,
     p_month INT
 )
@@ -422,7 +422,7 @@ BEGIN
         FROM Usuario
         WHERE Tipo_usuario_id = 3
     LOOP
-        PERFORM fn_crear_factura_usuario_mes(r_user.id, p_year, p_month);
+        PERFORM reservas.fn_crear_factura_usuario_mes(r_user.id, p_year, p_month);
     END LOOP;
 END;
 $$ LANGUAGE plpgsql;
@@ -431,7 +431,7 @@ $$ LANGUAGE plpgsql;
 -- 6. FUNCIONES ETL
 -- ===========================================================
 -- 1. FUNCIÓN: Importar usuarios desde tabla staging
-CREATE OR REPLACE FUNCTION fn_etl_importar_usuarios()
+CREATE OR REPLACE FUNCTION reservas.fn_etl_importar_usuarios()
 RETURNS VOID AS $$
 BEGIN
     WITH datos_limpios AS (
@@ -473,13 +473,13 @@ $$ LANGUAGE plpgsql;
 -- ===========================================================
 
 -- 1. TRIGGER: llama a fn_generar_facturas_mes con año/mes actuales
-CREATE OR REPLACE FUNCTION trg_facturar_todos_mes_actual()
+CREATE OR REPLACE FUNCTION reservas.trg_facturar_todos_mes_actual()
 RETURNS TRIGGER AS $$
 DECLARE
     v_year  INT := EXTRACT(YEAR  FROM CURRENT_DATE);
     v_month INT := EXTRACT(MONTH FROM CURRENT_DATE);
 BEGIN
-    PERFORM fn_generar_facturas_mes(v_year, v_month);
+    PERFORM reservas.fn_generar_facturas_mes(v_year, v_month);
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -488,4 +488,4 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER tg_facturar_al_insertar
 AFTER INSERT ON Control_Facturacion
 FOR EACH ROW
-EXECUTE FUNCTION trg_facturar_todos_mes_actual();
+EXECUTE FUNCTION reservas.trg_facturar_todos_mes_actual();
