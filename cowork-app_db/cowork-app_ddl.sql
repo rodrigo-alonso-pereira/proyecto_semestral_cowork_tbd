@@ -262,6 +262,10 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- 3. FUNCIÓN: Tasa de churn en un período
+/* Corrección: antes se contaban como activos todos los usuarios activos HOY,
+lo que daba el mismo número de activos cada mes y distorsionaba el churn.
+Ahora se reconstruye el último estado del usuario antes de fecha_inicio,
+para contar solo quienes realmente estaban activos al inicio del período. */
 CREATE OR REPLACE FUNCTION reservas.kpi_churn_rate(
     fecha_inicio DATE,
     fecha_fin DATE
@@ -278,36 +282,59 @@ BEGIN
             MAX(CASE WHEN nombre = 'Activo' THEN id END) AS id_activo,
             MAX(CASE WHEN nombre = 'Inactivo' THEN id END) AS id_inactivo,
             MAX(CASE WHEN nombre = 'Suspendido' THEN id END) AS id_suspendido
-        FROM reservas.estado_usuario
+        FROM estado_usuario
     ),
-    activos AS (
+
+    -- ESTADO AL INICIO DE PERÍODO
+    ultimo_estado AS (
+        SELECT
+            u.id AS usuario_id,
+            COALESCE(
+                (
+                    SELECT e.estado_usuario_id
+                    FROM kpi_cambios_estado e
+                    WHERE e.usuario_id = u.id
+                      AND e.fecha_cambio_estado < fecha_inicio
+                    ORDER BY e.fecha_cambio_estado DESC
+                    LIMIT 1
+                ),
+                u.estado_usuario_id
+            ) AS estado_inicio
+        FROM usuario u
+    ),
+
+    activos_en_inicio AS (
         SELECT COUNT(*)::int AS total
-        FROM reservas.usuario u
-        JOIN reservas.estado_usuario eu ON eu.id = u.estado_usuario_id
-        WHERE eu.nombre = 'Activo'
+        FROM ultimo_estado ue
+        CROSS JOIN ids i
+        WHERE ue.estado_inicio = i.id_activo
     ),
+
+    -- BAJAS DURANTE EL PERÍODO
     bajas AS (
         SELECT DISTINCT e.usuario_id
-        FROM reservas.kpi_cambios_estado e
+        FROM kpi_cambios_estado e
         CROSS JOIN ids i
         WHERE e.fecha_cambio_estado BETWEEN fecha_inicio AND fecha_fin
           AND e.estado_anterior = i.id_activo
-          AND e.Estado_usuario_id IN (i.id_inactivo, i.id_suspendido)
+          AND e.estado_usuario_id IN (i.id_inactivo, i.id_suspendido)
     )
+
     SELECT
-        (SELECT COUNT(*)::int FROM bajas),
-        (SELECT total FROM activos),
+        (SELECT COUNT(*) FROM bajas),
+        (SELECT total FROM activos_en_inicio),
         CASE
-            WHEN (SELECT total FROM activos) = 0 THEN 0
+            WHEN (SELECT total FROM activos_en_inicio) = 0 THEN 0
             ELSE ROUND(
                 ((SELECT COUNT(*)::numeric FROM bajas)
                     /
-                NULLIF((SELECT total FROM activos)::numeric,0)) * 100,
+                NULLIF((SELECT total FROM activos_en_inicio)::numeric,0)) * 100,
                 2
             )
         END;
 END;
 $$ LANGUAGE plpgsql;
+
 
 -- ===========================================================
 -- 5. FUNCIONES DE FACTURACIÓN
