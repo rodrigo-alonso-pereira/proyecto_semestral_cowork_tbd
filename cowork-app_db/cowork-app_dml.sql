@@ -645,3 +645,7 @@ INSERT INTO reservas.Reserva (Id, Inicio_reserva, Termino_reserva, Fecha_creacio
 (334, '2025-12-23 10:00:00', '2025-12-23 11:00:00', '2025-12-23', 5000, 98, 10, 3),
 (335, '2025-12-05 10:00:00', '2025-12-05 11:00:00', '2025-12-05', 5000, 100, 11, 3),
 (336, '2025-12-15 12:00:00', '2025-12-15 13:00:00', '2025-12-15', 5000, 100, 12, 3);
+
+SELECT setval('reservas.usuario_id_seq', (SELECT MAX(id) FROM reservas.usuario));
+SELECT setval('reservas.reserva_id_seq', (SELECT MAX(id) FROM reservas.reserva));
+SELECT setval('reservas.historial_estado_usuario_id_seq', (SELECT MAX(id) FROM reservas.historial_estado_usuario));
