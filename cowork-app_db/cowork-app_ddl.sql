@@ -563,8 +563,8 @@ BEGIN
         'Plan: ' || v_nombre_plan ||
         ', Precio plan: ' || v_precio_plan::TEXT ||
         ', Horas incluidas: ' || v_tiempo_incluido::TEXT ||
-        ', Horas usadas: ' || COALESCE(v_total_horas, 0)::TEXT ||
-        ', Horas cobradas: ' || COALESCE(v_horas_cobradas_totales, 0)::TEXT ||
+        ', Horas usadas: ' || COALESCE(v_total_horas::INT, 0)::TEXT ||
+        ', Horas cobradas: ' || COALESCE(v_horas_cobradas_totales::INT, 0)::TEXT ||
         '. Detalle: ' || reservas.fn_generar_descripcion_factura(p_usuario_id, v_periodo);
 
     -- 9) Insertar factura
