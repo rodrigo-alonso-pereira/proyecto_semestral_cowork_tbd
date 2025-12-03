@@ -152,10 +152,13 @@ CREATE TABLE IF NOT EXISTS Usuario_import (
 );
 
 -- Control de procesos de facturación
-CREATE TABLE IF NOT EXISTS Control_Facturacion (
+CREATE TABLE IF NOT EXISTS reservas.Control_Facturacion (
     id SERIAL PRIMARY KEY,
-    fecha_llamada TIMESTAMP NOT NULL DEFAULT NOW()
+    fecha_llamada TIMESTAMP NOT NULL DEFAULT NOW(),
+    anio INT,
+    mes INT
 );
+
 
 -- ===========================================================
 -- 3. VISTAS KPI
@@ -184,6 +187,7 @@ JOIN reservas.Estado_Usuario eu ON eu.Id = e.Estado_usuario_id
 WHERE e.orden_cambio = 1
   AND eu.Nombre = 'Activo';
 
+-- ===========================================================
 -- kpi que calcula horas reservadas reales
 CREATE OR REPLACE VIEW reservas.kpi_reservas_reales AS
 SELECT
@@ -195,6 +199,7 @@ SELECT
 FROM reservas.Reserva res
 WHERE res.estado_reserva_id = 3;
 
+-- ===========================================================
 -- kpi que rastrea cambios de estado de usuario
 CREATE OR REPLACE VIEW reservas.kpi_cambios_estado AS
 SELECT
@@ -224,6 +229,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- ===========================================================
 -- 2. FUNCIÓN: Utilización real de recursos en un período
 CREATE OR REPLACE FUNCTION reservas.kpi_utilizacion_real(
     fecha_inicio DATE,
@@ -262,6 +268,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- ===========================================================
 -- 3. FUNCIÓN: Tasa de churn en un período
 CREATE OR REPLACE FUNCTION reservas.kpi_churn_rate(
     fecha_inicio DATE,
@@ -377,7 +384,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
+-- ===========================================================
 -- 2. FUNCIÓN: Crear factura por usuario/mes
 CREATE OR REPLACE FUNCTION reservas.fn_crear_factura_usuario_mes(
     p_usuario_id BIGINT,
@@ -387,39 +394,181 @@ CREATE OR REPLACE FUNCTION reservas.fn_crear_factura_usuario_mes(
 RETURNS BIGINT AS $$
 DECLARE
     v_periodo DATE := make_date(p_year, p_month, 1);
-    v_total BIGINT;
+
     v_numero BIGINT;
     v_estado_pendiente BIGINT;
     v_descripcion TEXT;
     v_id_factura BIGINT;
+
+    -- Datos del plan
+    v_precio_plan      BIGINT;
+    v_tiempo_incluido  INT;
+    v_nombre_plan      TEXT;
+
+    -- Datos de uso del mes
+    v_total_horas            NUMERIC;
+    v_horas_cobradas_totales NUMERIC;
+    v_total_cobro_uso        BIGINT;
+    v_total_factura          BIGINT;
 BEGIN
-    SELECT id INTO v_id_factura
-    FROM Factura
-    WHERE usuario_id = p_usuario_id
-      AND date_trunc('month', fecha_emision) = v_periodo;
+    -- 1) Verificar si ya existe factura para ese usuario/mes
+    SELECT f.Id
+    INTO v_id_factura
+    FROM reservas.Factura f
+    WHERE f.Usuario_id = p_usuario_id
+      AND date_trunc('month', f.Fecha_emision) = date_trunc('month', v_periodo::timestamp);
 
     IF v_id_factura IS NOT NULL THEN
         RETURN v_id_factura;
     END IF;
 
-    SELECT COALESCE(SUM(valor), 0)
-    INTO v_total
-    FROM Reserva
-    WHERE usuario_id = p_usuario_id
-      AND estado_reserva_id = 3
-      AND date_trunc('month', inicio_reserva) = v_periodo;
+    -- 2) Obtener plan del usuario
+    SELECT
+        p.Precio_mensual,
+        p.Tiempo_incluido,
+        p.Nombre
+    INTO
+        v_precio_plan,
+        v_tiempo_incluido,
+        v_nombre_plan
+    FROM reservas.Usuario u
+    JOIN reservas.Plan p ON p.Id = u.Plan_id
+    WHERE u.Id = p_usuario_id;
 
-    SELECT COALESCE(MAX(Numero_factura), 0) + 1
+    IF v_precio_plan IS NULL THEN
+        RAISE EXCEPTION 'Usuario % no tiene plan asociado, no se puede facturar', p_usuario_id;
+    END IF;
+
+    -- 3) Si el plan es "Sin Plan": se cobra sólo el valor de las reservas completadas
+    IF v_nombre_plan = 'Sin Plan' THEN
+        SELECT COALESCE(
+                   SUM(EXTRACT(EPOCH FROM (res.Termino_reserva - res.Inicio_reserva)) / 3600.0),
+                   0
+               )::NUMERIC,
+               COALESCE(
+                   SUM(res.Valor),
+                   0
+               )::BIGINT
+        INTO
+            v_total_horas,
+            v_total_cobro_uso
+        FROM reservas.Reserva res
+        JOIN reservas.Estado_Reserva er ON er.Id = res.Estado_reserva_id
+        WHERE res.Usuario_id = p_usuario_id
+          AND er.Nombre = 'Completada'
+          AND res.Inicio_reserva >= v_periodo
+          AND res.Inicio_reserva < (v_periodo + INTERVAL '1 month');
+
+        v_horas_cobradas_totales := v_total_horas; -- todas las horas se cobran
+        v_total_factura := v_total_cobro_uso;      -- sin mensualidad ni horas incluidas
+
+    ELSE
+        -- 4) Plan con mensualidad + horas incluidas
+        WITH params AS (
+            SELECT v_tiempo_incluido::NUMERIC AS horas_incluidas
+        ),
+        reservas_mes AS (
+            SELECT
+                res.Id,
+                res.Valor::NUMERIC AS valor,
+                EXTRACT(EPOCH FROM (res.Termino_reserva - res.Inicio_reserva)) / 3600.0 AS horas,
+                res.Inicio_reserva
+            FROM reservas.Reserva res
+            JOIN reservas.Estado_Reserva er ON er.Id = res.Estado_reserva_id
+            WHERE res.Usuario_id = p_usuario_id
+              AND er.Nombre = 'Completada'
+              AND res.Inicio_reserva >= v_periodo
+              AND res.Inicio_reserva < (v_periodo + INTERVAL '1 month')
+        ),
+        reservas_con_acumulado AS (
+            SELECT
+                r.*,
+                SUM(r.horas) OVER (ORDER BY r.Inicio_reserva, r.Id) AS horas_acumuladas
+            FROM reservas_mes r
+        ),
+        reservas_cobradas AS (
+            SELECT
+                r.Id,
+                r.valor,
+                r.horas,
+                r.Inicio_reserva,
+                r.horas_acumuladas,
+                -- horas gratuitas disponibles antes de esta reserva
+                GREATEST(
+                    params.horas_incluidas - (r.horas_acumuladas - r.horas),
+                    0
+                ) AS horas_gratis_disponibles,
+                -- horas gratis efectivas en esta reserva
+                LEAST(
+                    r.horas,
+                    GREATEST(
+                        params.horas_incluidas - (r.horas_acumuladas - r.horas),
+                        0
+                    )
+                ) AS horas_gratis_en_reserva,
+                -- horas cobradas en esta reserva
+                (r.horas - LEAST(
+                    r.horas,
+                    GREATEST(
+                        params.horas_incluidas - (r.horas_acumuladas - r.horas),
+                        0
+                    )
+                )) AS horas_cobradas,
+                CASE
+                    WHEN r.horas > 0 THEN (r.valor / r.horas)
+                    ELSE 0
+                END AS valor_por_hora
+            FROM reservas_con_acumulado r
+            CROSS JOIN params
+        ),
+        cobros AS (
+            SELECT
+                COALESCE(SUM(horas), 0)::NUMERIC                           AS total_horas,
+                COALESCE(SUM(horas_cobradas), 0)::NUMERIC                  AS total_horas_cobradas,
+                COALESCE(SUM(horas_cobradas * valor_por_hora), 0)::BIGINT AS total_cobro
+            FROM reservas_cobradas
+        )
+        SELECT
+            total_horas,
+            total_horas_cobradas,
+            total_cobro
+        INTO
+            v_total_horas,
+            v_horas_cobradas_totales,
+            v_total_cobro_uso
+        FROM cobros;
+
+        -- Total = precio mensual del plan + cobro por horas extra
+        v_total_factura := v_precio_plan + v_total_cobro_uso;
+    END IF;
+
+    -- 5) No crear factura si el total es 0
+    IF v_total_factura = 0 THEN
+        RETURN NULL;
+    END IF;
+
+    -- 6) Número de factura (simple: MAX + 1)
+    SELECT COALESCE(MAX(f.Numero_factura), 0) + 1
     INTO v_numero
-    FROM Factura;
+    FROM reservas.Factura f;
 
-    SELECT id INTO v_estado_pendiente
-    FROM Estado_Factura
-    WHERE nombre = 'Pendiente';
+    -- 7) Estado "Pendiente"
+    SELECT ef.Id
+    INTO v_estado_pendiente
+    FROM reservas.Estado_Factura ef
+    WHERE ef.Nombre = 'Pendiente';
 
-    v_descripcion := reservas.fn_generar_descripcion_factura(p_usuario_id, v_periodo);
+    -- 8) Descripción: plan + resumen + detalle de reservas
+    v_descripcion := 
+        'Plan: ' || v_nombre_plan ||
+        ', Precio plan: ' || v_precio_plan::TEXT ||
+        ', Horas incluidas: ' || v_tiempo_incluido::TEXT ||
+        ', Horas usadas: ' || COALESCE(v_total_horas, 0)::TEXT ||
+        ', Horas cobradas: ' || COALESCE(v_horas_cobradas_totales, 0)::TEXT ||
+        '. Detalle: ' || reservas.fn_generar_descripcion_factura(p_usuario_id, v_periodo);
 
-    INSERT INTO Factura (
+    -- 9) Insertar factura
+    INSERT INTO reservas.Factura (
         Numero_factura,
         Fecha_emision,
         Total,
@@ -430,17 +579,18 @@ BEGIN
     VALUES (
         v_numero,
         v_periodo,
-        v_total,
+        v_total_factura,
         p_usuario_id,
         v_estado_pendiente,
         v_descripcion
     )
-    RETURNING id INTO v_id_factura;
+    RETURNING Id INTO v_id_factura;
 
     RETURN v_id_factura;
 END;
 $$ LANGUAGE plpgsql;
 
+-- ===========================================================
 -- 3. FUNCIÓN: Generar facturas para todos los usuarios clientes de un mes
 CREATE OR REPLACE FUNCTION reservas.fn_generar_facturas_mes(
     p_year INT,
@@ -451,11 +601,14 @@ DECLARE
     r_user RECORD;
 BEGIN
     FOR r_user IN 
-        SELECT id
-        FROM Usuario
-        WHERE Tipo_usuario_id = 3
+        SELECT u.Id
+        FROM Usuario u
+        JOIN Estado_Usuario eu ON eu.Id = u.Estado_usuario_id
+        JOIN Tipo_Usuario  tu ON tu.Id = u.Tipo_usuario_id
+        WHERE eu.Nombre = 'Activo'
+          AND tu.Nombre = 'Cliente'
     LOOP
-        PERFORM reservas.fn_crear_factura_usuario_mes(r_user.id, p_year, p_month);
+        PERFORM reservas.fn_crear_factura_usuario_mes(r_user.Id, p_year, p_month);
     END LOOP;
 END;
 $$ LANGUAGE plpgsql;
@@ -504,21 +657,30 @@ $$ LANGUAGE plpgsql;
 -- ===========================================================
 -- 7. TRIGGERS
 -- ===========================================================
-
--- 1. TRIGGER: llama a fn_generar_facturas_mes con año/mes actuales
+-- 1. TRIGGER FUNCTION: usa anio/mes si vienen, si no usa la fecha actual
 CREATE OR REPLACE FUNCTION reservas.trg_facturar_todos_mes_actual()
 RETURNS TRIGGER AS $$
-DECLARE
-    v_year  INT := EXTRACT(YEAR  FROM CURRENT_DATE);
-    v_month INT := EXTRACT(MONTH FROM CURRENT_DATE);
 BEGIN
-    PERFORM reservas.fn_generar_facturas_mes(v_year, v_month);
+    -- Si no viene el año, usar año actual
+    IF NEW.anio IS NULL THEN
+        NEW.anio := EXTRACT(YEAR FROM CURRENT_DATE)::INT;
+    END IF;
+
+    -- Si no viene el mes, usar mes actual
+    IF NEW.mes IS NULL THEN
+        NEW.mes := EXTRACT(MONTH FROM CURRENT_DATE)::INT;
+    END IF;
+
+    -- Llamar a la función de facturación con ese año/mes
+    PERFORM reservas.fn_generar_facturas_mes(NEW.anio, NEW.mes);
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
--- 2. TRIGGER: AL INSERTAR EN Control_Facturacion → FACTURAR A TODOS
+-- ===========================================================
+-- 2. TRIGGER: al insertar en Control_Facturacion → facturar a todos
 CREATE TRIGGER tg_facturar_al_insertar
-AFTER INSERT ON Control_Facturacion
+BEFORE INSERT ON reservas.Control_Facturacion
 FOR EACH ROW
 EXECUTE FUNCTION reservas.trg_facturar_todos_mes_actual();
