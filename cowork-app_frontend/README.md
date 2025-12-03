@@ -1,70 +1,106 @@
-# Getting Started with Create React App
+# Frontend – Cowork App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Este proyecto corresponde al **frontend** de la aplicación de gestión de reservas del cowork.
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+## ✅ Requisitos previos
 
-### `npm start`
+Antes de ejecutar el proyecto, asegúrate de tener instalado:
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- **Node.js** (versión recomendada: 18 o superior)
+- **npm** (se instala junto con Node)
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+Puedes verificar las versiones con:
 
-### `npm test`
+```bash
+node -v
+npm -v
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+---
 
-### `npm run build`
+## 📥 Instalación
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+1. Clona el repositorio (si aún no lo tienes):
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```bash
+git clone <URL_DEL_REPOSITORIO>
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+2. Entra a la carpeta del frontend (ajusta el nombre según tu estructura):
 
-### `npm run eject`
+```bash
+cd cowork-app_frontend
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+3. Instala las dependencias del proyecto:
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```bash
+npm install
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+Este comando descargará todas las librerías necesarias usando el archivo `package.json`.
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+---
 
-## Learn More
+## 🔗 Configuración de la conexión al backend
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+El frontend se comunica con el backend mediante Axios, configurado en el archivo:
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+`src/services/api.js`
 
-### Code Splitting
+Ahí encontrarás algo similar a:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+```js
+import axios from "axios";
 
-### Analyzing the Bundle Size
+const api = axios.create({
+  baseURL: "http://localhost:8060/api/v1",
+});
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+export default api;
+```
 
-### Making a Progressive Web App
+Por defecto, el frontend espera que el backend esté disponible en:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+- `http://localhost:8060/api/v1`
 
-### Advanced Configuration
+Si el backend se ejecuta en otra URL o puerto, debes actualizar la propiedad `baseURL` con la dirección correcta.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+Ejemplos:
 
-### Deployment
+```js
+// Si el backend corre en otro puerto
+baseURL: "http://localhost:8080/api/v1"
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+// Si corre en otra máquina de la red
+baseURL: "http://192.168.0.10:8060/api/v1"
+```
 
-### `npm run build` fails to minify
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## ▶️ Ejecutar el frontend en modo desarrollo
+
+Con las dependencias instaladas y el backend en funcionamiento, ejecuta:
+
+```bash
+npm start
+```
+
+Esto:
+
+- Levantará la aplicación en modo desarrollo.
+- Abrirá (o podrás abrir) el navegador en:
+
+  - `http://localhost:3000`
+
+Cada vez que modifiques el código, la página se recargará automáticamente.
+
+> ⚠️ Importante: si ya hay otra aplicación usando el puerto 3000, Create React App te preguntará si quieres usar otro puerto. Puedes aceptar escribiendo `Y` y presionando **Enter**.
+
+
+## 📝 Notas finales
+
+- Verifica siempre que el backend esté corriendo y que la URL en `src/services/api.js` sea la correcta.
+
