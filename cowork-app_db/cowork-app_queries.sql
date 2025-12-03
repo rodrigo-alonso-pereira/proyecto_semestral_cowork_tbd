@@ -1,15 +1,55 @@
-select *
-from estado_factura;
-select *
-from estado_reserva;
-select *
-from estado_recurso;
-select *
-from estado_usuario;
-select *
-from tipo_recurso;
-select *
-from tipo_usuario;
+--  COWORK-APP - QUERIES SQL
+
+SET search_path TO reservas;
+
+-- ===========================================================
+-- 1. KPIs - SELECT
+-- ===========================================================
+
+-- 1.1 Nuevos clientes en un período
+SELECT * 
+FROM kpi_nuevos_clientes_mes('2025-11-01', '2025-11-30');
+
+-- 1.2 Utilización real en un período
+SELECT *
+FROM kpi_utilizacion_real('2025-11-01', '2025-11-30');
+
+-- 1.3 Tasa de churn en un período
+SELECT *
+FROM kpi_churn_rate('2025-11-01', '2025-11-30');
+
+-- 1.4 Horas reservadas reales por reserva (vista base)
+SELECT *
+FROM kpi_reservas_reales
+ORDER BY reserva_id;
+
+-- 1.5 Cambios de estado de usuario (vista base)
+SELECT *
+FROM kpi_cambios_estado
+ORDER BY usuario_id, fecha_cambio_estado;
+
+-- ===========================================================
+-- 2. FUNCIONES DE FACTURACIÓN
+-- ===========================================================
+
+-- 2.1 Generar todas las facturas del mes para todos los clientes
+SELECT fn_generar_facturas_mes(2025, 11);
+
+-- 2.2 (Opcional) Generar facturas llamando a Control_Facturacion
+/* También se pueden crear las facturas  llamando a la 
+función Control_Facturacion con DEFAULT VALUES, lo cual
+ejecuta la generación de facturas para el mes actual, dejando un timestamp de cuándo se ejecutó por última vez. */
+INSERT INTO Control_Facturacion DEFAULT VALUES;
+
+-- ===========================================================
+-- Queries antiguas
+
+select * from estado_factura;
+select * from estado_reserva;
+select * from estado_recurso;
+select * from estado_usuario;
+select * from tipo_recurso;
+select * from tipo_usuario;
 select * from plan;
 select * from factura;
 select * from historial_estado_usuario;

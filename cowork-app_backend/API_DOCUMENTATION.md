@@ -1,9 +1,9 @@
-# API REST - Sistema de Reservas Cowork-App v2.1.0
+# API REST - Sistema de Reservas Cowork-App v2.2.0
 
 ## ✅ Estado del Proyecto
 El proyecto ha sido **compilado exitosamente** y está listo para usar.
 
-**Última actualización:** 27 de Noviembre, 2025
+**Última actualización:** 1 de Diciembre, 2025
 
 ---
 
@@ -1223,6 +1223,245 @@ Response: 200 OK
 
 ---
 
+## 🔌 Endpoints de KPIs (Indicadores de Rendimiento)
+
+### Base URL: `/api/v1/kpi`
+
+Los siguientes endpoints proporcionan métricas e indicadores clave del negocio. Cada KPI tiene dos variantes:
+- **Por mes**: Consulta datos de un mes específico
+- **Por año**: Consulta datos de todos los meses de un año
+
+**⚠️ IMPORTANTE**: Antes de usar estos endpoints, asegúrate de que las vistas y funciones KPI estén creadas en la base de datos ejecutando el script `kpi_setup.sql`.
+
+---
+
+### 1. KPI: Nuevos Clientes
+
+Mide la cantidad de clientes nuevos que se registraron en un período.
+
+#### **GET** `/api/v1/kpi/nuevos-clientes/mes/{yearMonth}`
+Obtener nuevos clientes de un mes específico
+
+**Parámetros:**
+- `yearMonth` (path): Año y mes en formato `yyyy-MM` (ejemplo: `2025-11`)
+
+```json
+Request: GET /api/v1/kpi/nuevos-clientes/mes/2025-11
+
+Response: 200 OK
+{
+  "mes": "2025-11",
+  "nuevosClientes": 10
+}
+```
+
+#### **GET** `/api/v1/kpi/nuevos-clientes/anio/{year}`
+Obtener nuevos clientes de todos los meses de un año
+
+**Parámetros:**
+- `year` (path): Año en formato `yyyy` (ejemplo: `2025`)
+
+```json
+Request: GET /api/v1/kpi/nuevos-clientes/anio/2025
+
+Response: 200 OK
+[
+  {
+    "mes": "2025-01",
+    "nuevosClientes": 5
+  },
+  {
+    "mes": "2025-02",
+    "nuevosClientes": 8
+  },
+  {
+    "mes": "2025-03",
+    "nuevosClientes": 12
+  },
+  ...
+  {
+    "mes": "2025-11",
+    "nuevosClientes": 10
+  },
+  {
+    "mes": "2025-12",
+    "nuevosClientes": 7
+  }
+]
+```
+
+---
+
+### 2. KPI: Utilización Real de Recursos
+
+Mide el porcentaje de uso real de los recursos (salas, espacios) comparando las horas reservadas con las horas disponibles.
+
+#### **GET** `/api/v1/kpi/utilizacion-real/mes/{yearMonth}`
+Obtener utilización real de un mes específico
+
+**Parámetros:**
+- `yearMonth` (path): Año y mes en formato `yyyy-MM` (ejemplo: `2025-11`)
+
+```json
+Request: GET /api/v1/kpi/utilizacion-real/mes/2025-11
+
+Response: 200 OK
+{
+  "mes": "2025-11",
+  "horasReservadasTotal": 21,
+  "horasPosibles": 243,
+  "porcentajeUtilizacion": 8.75
+}
+```
+
+**Campos:**
+- `horasReservadasTotal`: Suma de horas efectivamente reservadas (Integer)
+- `horasPosibles`: Total de horas disponibles en días hábiles (Integer)
+- `porcentajeUtilizacion`: Porcentaje de utilización con 2 decimales (Float)
+
+#### **GET** `/api/v1/kpi/utilizacion-real/anio/{year}`
+Obtener utilización real de todos los meses de un año
+
+**Parámetros:**
+- `year` (path): Año en formato `yyyy` (ejemplo: `2025`)
+
+```json
+Request: GET /api/v1/kpi/utilizacion-real/anio/2025
+
+Response: 200 OK
+[
+  {
+    "mes": "2025-01",
+    "horasReservadasTotal": 15,
+    "horasPosibles": 240,
+    "porcentajeUtilizacion": 6.25
+  },
+  {
+    "mes": "2025-02",
+    "horasReservadasTotal": 18,
+    "horasPosibles": 228,
+    "porcentajeUtilizacion": 7.89
+  },
+  ...
+  {
+    "mes": "2025-11",
+    "horasReservadasTotal": 21,
+    "horasPosibles": 243,
+    "porcentajeUtilizacion": 8.75
+  },
+  {
+    "mes": "2025-12",
+    "horasReservadasTotal": 25,
+    "horasPosibles": 252,
+    "porcentajeUtilizacion": 9.92
+  }
+]
+```
+
+---
+
+### 3. KPI: Churn Rate (Tasa de Abandono)
+
+Mide el porcentaje de clientes que abandonaron el servicio (pasaron de estado "Activo" a "Inactivo" o "Suspendido") en un período.
+
+#### **GET** `/api/v1/kpi/churn-rate/mes/{yearMonth}`
+Obtener tasa de churn de un mes específico
+
+**Parámetros:**
+- `yearMonth` (path): Año y mes en formato `yyyy-MM` (ejemplo: `2025-11`)
+
+```json
+Request: GET /api/v1/kpi/churn-rate/mes/2025-11
+
+Response: 200 OK
+{
+  "mes": "2025-11",
+  "clientesAbandonaron": 5,
+  "clientesActivos": 100,
+  "churnRate": 5.00
+}
+```
+
+**Campos:**
+- `clientesAbandonaron`: Cantidad de clientes que se fueron (Integer)
+- `clientesActivos`: Cantidad de clientes activos al inicio del período (Integer)
+- `churnRate`: Tasa de abandono en porcentaje con 2 decimales (Float)
+
+#### **GET** `/api/v1/kpi/churn-rate/anio/{year}`
+Obtener tasa de churn de todos los meses de un año
+
+**Parámetros:**
+- `year` (path): Año en formato `yyyy` (ejemplo: `2025`)
+
+```json
+Request: GET /api/v1/kpi/churn-rate/anio/2025
+
+Response: 200 OK
+[
+  {
+    "mes": "2025-01",
+    "clientesAbandonaron": 3,
+    "clientesActivos": 95,
+    "churnRate": 3.16
+  },
+  {
+    "mes": "2025-02",
+    "clientesAbandonaron": 2,
+    "clientesActivos": 98,
+    "churnRate": 2.04
+  },
+  ...
+  {
+    "mes": "2025-11",
+    "clientesAbandonaron": 5,
+    "clientesActivos": 100,
+    "churnRate": 5.00
+  },
+  {
+    "mes": "2025-12",
+    "clientesAbandonaron": 1,
+    "clientesActivos": 102,
+    "churnRate": 0.98
+  }
+]
+```
+
+---
+
+### Códigos de Respuesta para KPIs
+
+**Éxito:**
+- `200 OK`: Consulta exitosa, retorna los datos del KPI
+
+**Error:**
+- `400 BAD REQUEST`: Formato de fecha inválido o parámetros incorrectos
+- `500 INTERNAL SERVER ERROR`: Error al consultar la base de datos o funciones KPI no creadas
+
+---
+
+### Notas sobre KPIs
+
+1. **Requisito de Base de Datos**: Las funciones y vistas KPI deben estar creadas en PostgreSQL:
+   - Vista: `kpi_nuevos_clientes_base`
+   - Vista: `kpi_reservas_reales`
+   - Vista: `kpi_cambios_estado`
+   - Función: `kpi_nuevos_clientes_mes(fecha_inicio, fecha_fin)`
+   - Función: `kpi_utilizacion_real(fecha_inicio, fecha_fin)`
+   - Función: `kpi_churn_rate(fecha_inicio, fecha_fin)`
+
+2. **Formato de Fechas**:
+   - Mes: `yyyy-MM` (ejemplo: `2025-11`)
+   - Año: `yyyy` (ejemplo: `2025`)
+
+3. **Cálculos**:
+   - **Nuevos Clientes**: Cuenta usuarios tipo "Cliente" que tuvieron su primer estado "Activo" en el período
+   - **Utilización Real**: Calcula horas reservadas vs horas posibles (días hábiles × 12 horas/día)
+   - **Churn Rate**: Calcula porcentaje de clientes que pasaron de "Activo" a "Inactivo"/"Suspendido"
+
+4. **Valores por Defecto**: Si no hay datos para un mes en la consulta anual, se retorna ceros (0 clientes, 0 horas, 0.0%)
+
+---
+
 3. **La API estará disponible en:**
 ```
 http://localhost:8080/api/v1/reserva
@@ -1246,3 +1485,10 @@ http://localhost:8080/api/v1/reserva
 7. **Queries JPQL**: Las facturas utilizan queries JPQL con `EXTRACT` para filtrar por mes y año
 8. **Actualización de Estado**: Factura usa PATCH para actualizar solo el estado (no toda la entidad)
 9. **Horas Restantes**: El endpoint `/api/v1/usuario/{id}/horas-restantes` usa una query nativa con CTE (Common Table Expression) para calcular las horas disponibles del mes actual. Los usuarios **sin plan** pueden obtener valores negativos, lo cual es el comportamiento esperado.
+10. **KPIs (Indicadores de Rendimiento)**:
+    - Utilizan **funciones PostgreSQL** (`kpi_nuevos_clientes_mes`, `kpi_utilizacion_real`, `kpi_churn_rate`)
+    - Requieren **vistas materializadas** (`kpi_nuevos_clientes_base`, `kpi_reservas_reales`, `kpi_cambios_estado`)
+    - Las queries usan **CAST explícito** para garantizar tipos correctos (Integer, Float con 2 decimales)
+    - Usa `RoundingMode.HALF_UP` para redondeo de decimales
+    - Cada KPI tiene endpoint para consulta mensual y anual
+    - **Scripts disponibles**: `kpi_setup.sql` (crear vistas/funciones) y `kpi_verify.sql` (verificar creación)
