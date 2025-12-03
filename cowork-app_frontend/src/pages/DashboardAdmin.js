@@ -1,6 +1,5 @@
-// src/pages/DashboardAdmin.js
-import React, { useMemo, useState } from "react";
-import { Card, Row, Col, Badge, Form } from "react-bootstrap";
+import React, { useEffect, useMemo, useState } from "react";
+import { Card, Row, Col, Badge, Form, Spinner, Alert } from "react-bootstrap";
 import {
   BarChart,
   Bar,
@@ -15,90 +14,238 @@ import {
   ComposedChart,
 } from "recharts";
 
-// ===========================
-// Datos Pruebas (12 meses, 1 año)
-// ===========================
-const dataKpiMensual = [
-  // anio, mesNum (1..12), etiqueta mes, y todos los KPI
-  { anio: 2025, mesNum: 1, mes: "Ene", nuevos: 8, horasReservadas: 320, horasPosibles: 480, porcentaje: 66.7, clientesSeFueron: 5, activosInicio: 180, churn: 2.8 },
-  { anio: 2025, mesNum: 2, mes: "Feb", nuevos: 12, horasReservadas: 410, horasPosibles: 480, porcentaje: 85.4, clientesSeFueron: 7, activosInicio: 190, churn: 3.7 },
-  { anio: 2025, mesNum: 3, mes: "Mar", nuevos: 15, horasReservadas: 280, horasPosibles: 480, porcentaje: 58.3, clientesSeFueron: 4, activosInicio: 195, churn: 2.1 },
-  { anio: 2025, mesNum: 4, mes: "Abr", nuevos: 11, horasReservadas: 360, horasPosibles: 480, porcentaje: 75.0, clientesSeFueron: 6, activosInicio: 200, churn: 3.0 },
-  { anio: 2025, mesNum: 5, mes: "May", nuevos: 16, horasReservadas: 390, horasPosibles: 480, porcentaje: 81.3, clientesSeFueron: 3, activosInicio: 205, churn: 1.5 },
-  { anio: 2025, mesNum: 6, mes: "Jun", nuevos: 20, horasReservadas: 420, horasPosibles: 480, porcentaje: 87.5, clientesSeFueron: 4, activosInicio: 210, churn: 1.9 },
-  { anio: 2025, mesNum: 7, mes: "Jul", nuevos: 18, horasReservadas: 350, horasPosibles: 480, porcentaje: 72.9, clientesSeFueron: 5, activosInicio: 215, churn: 2.3 },
-  { anio: 2025, mesNum: 8, mes: "Ago", nuevos: 14, horasReservadas: 330, horasPosibles: 480, porcentaje: 68.8, clientesSeFueron: 6, activosInicio: 220, churn: 2.7 },
-  { anio: 2025, mesNum: 9, mes: "Sep", nuevos: 17, horasReservadas: 360, horasPosibles: 480, porcentaje: 75.0, clientesSeFueron: 4, activosInicio: 225, churn: 1.8 },
-  { anio: 2025, mesNum: 10, mes: "Oct", nuevos: 19, horasReservadas: 400, horasPosibles: 480, porcentaje: 83.3, clientesSeFueron: 7, activosInicio: 230, churn: 3.0 },
-  { anio: 2025, mesNum: 11, mes: "Nov", nuevos: 13, horasReservadas: 370, horasPosibles: 480, porcentaje: 77.1, clientesSeFueron: 5, activosInicio: 235, churn: 2.1 },
-  { anio: 2025, mesNum: 12, mes: "Dic", nuevos: 22, horasReservadas: 440, horasPosibles: 480, porcentaje: 91.7, clientesSeFueron: 6, activosInicio: 240, churn: 2.5 },
-];
+import {
+  getKpiNuevosClientesMes,
+  getKpiNuevosClientesAnio,
+  getKpiUtilizacionMes,
+  getKpiUtilizacionAnio,
+  getKpiChurnMes,
+  getKpiChurnAnio,
+} from "../services/kpiService";
 
-// Meses para el select
 const MESES = [
-  { value: 1, label: "Enero" },
-  { value: 2, label: "Febrero" },
-  { value: 3, label: "Marzo" },
-  { value: 4, label: "Abril" },
-  { value: 5, label: "Mayo" },
-  { value: 6, label: "Junio" },
-  { value: 7, label: "Julio" },
-  { value: 8, label: "Agosto" },
-  { value: 9, label: "Septiembre" },
-  { value: 10, label: "Octubre" },
-  { value: 11, label: "Noviembre" },
-  { value: 12, label: "Diciembre" },
+  { value: 1, label: "Enero", short: "Ene" },
+  { value: 2, label: "Febrero", short: "Feb" },
+  { value: 3, label: "Marzo", short: "Mar" },
+  { value: 4, label: "Abril", short: "Abr" },
+  { value: 5, label: "Mayo", short: "May" },
+  { value: 6, label: "Junio", short: "Jun" },
+  { value: 7, label: "Julio", short: "Jul" },
+  { value: 8, label: "Agosto", short: "Ago" },
+  { value: 9, label: "Septiembre", short: "Sep" },
+  { value: 10, label: "Octubre", short: "Oct" },
+  { value: 11, label: "Noviembre", short: "Nov" },
+  { value: 12, label: "Diciembre", short: "Dic" },
 ];
 
-// Años disponibles en base al dataset
-const AÑOS_DISPONIBLES = Array.from(
-  new Set(dataKpiMensual.map((d) => d.anio))
-).sort((a, b) => a - b);
-
-// Valores por defecto = último registro
-const ultimoRegistro = dataKpiMensual[dataKpiMensual.length - 1];
-const DEFAULT_ANIO = ultimoRegistro.anio;
-const DEFAULT_MES = ultimoRegistro.mesNum;
+const getMonthIndex = (mesValor) => {
+  // Soporta "2025-03", "03" o 3
+  if (typeof mesValor === "number") return mesValor - 1;
+  if (typeof mesValor === "string") {
+    const parts = mesValor.split("-");
+    const n = Number(parts[1] ?? parts[0]);
+    return isNaN(n) ? 0 : n - 1;
+  }
+  return 0;
+};
 
 export default function DashboardAdmin() {
-  // Filtros superiores (solo KPIs)
+  const hoy = new Date();
+  const currentYear = hoy.getFullYear();
+  const currentMonth = hoy.getMonth() + 1;
+
+  // ========= FILTROS =========
+  // Filtros de arriba → solo afectan las tarjetas
   const [filtrosKpi, setFiltrosKpi] = useState({
-    mes: DEFAULT_MES,
-    anio: DEFAULT_ANIO,
+    mes: currentMonth,
+    anio: currentYear,
   });
 
-  // Filtro inferior (año de todos los gráficos)
-  const [anioGraficos, setAnioGraficos] = useState(DEFAULT_ANIO);
+  // Filtro de abajo → afecta todos los gráficos
+  const [anioGraficos, setAnioGraficos] = useState(currentYear);
 
+  // ========= ESTADO: CARDS =========
+  const [kpiMes, setKpiMes] = useState(null);
+  const [loadingMes, setLoadingMes] = useState(false);
+  const [errorMes, setErrorMes] = useState("");
 
-  // Registro mensual para los KPIs (mes + año seleccionados arriba)
-  const registroKpi = useMemo(() => {
-    return (
-      dataKpiMensual.find(
-        (d) => d.anio === filtrosKpi.anio && d.mesNum === filtrosKpi.mes
-      ) || ultimoRegistro
-    );
+  // ========= ESTADO: GRÁFICOS (por año) =========
+  const [nuevosPorMes, setNuevosPorMes] = useState([]);
+  const [utilizacionPorMes, setUtilizacionPorMes] = useState([]);
+  const [churnPorMes, setChurnPorMes] = useState([]);
+  const [loadingAnio, setLoadingAnio] = useState(false);
+  const [errorAnio, setErrorAnio] = useState("");
+
+  const buildYearMonth = (anio, mes) =>
+    `${anio}-${String(mes).padStart(2, "0")}`;
+
+  // ========= 1) CARGA PARA TARJETAS (mes / año de arriba) =========
+  useEffect(() => {
+    const fetchMes = async () => {
+      setLoadingMes(true);
+      setErrorMes("");
+
+      const { anio, mes } = filtrosKpi;
+      const ym = buildYearMonth(anio, mes);
+
+      try {
+        const [resNuevos, resUtil, resChurn] = await Promise.all([
+          getKpiNuevosClientesMes(ym),
+          getKpiUtilizacionMes(ym),
+          getKpiChurnMes(ym),
+        ]);
+
+        setKpiMes({
+          nuevosClientes: resNuevos.data?.nuevosClientes ?? 0,
+          horasReservadasTotal: resUtil.data?.horasReservadasTotal ?? 0,
+          horasPosibles: resUtil.data?.horasPosibles ?? 0,
+          porcentajeUtilizacion: resUtil.data?.porcentajeUtilizacion ?? 0,
+          clientesAbandonaron: resChurn.data?.clientesAbandonaron ?? 0,
+          clientesActivos: resChurn.data?.clientesActivos ?? 0,
+          churnRate: resChurn.data?.churnRate ?? 0,
+        });
+      } catch (err) {
+        console.error("Error al cargar KPIs del mes:", err);
+        setErrorMes("No se pudieron cargar los indicadores del mes seleccionado.");
+        setKpiMes(null);
+      } finally {
+        setLoadingMes(false);
+      }
+    };
+
+    fetchMes();
   }, [filtrosKpi]);
 
-  const kpiNuevosMesActual = registroKpi.nuevos;
-  const kpiUtilizacionMesActual = registroKpi.porcentaje;
-  const kpiChurnActual = {
-    churn: registroKpi.churn,
-    clientesSeFueron: registroKpi.clientesSeFueron,
-    activosInicio: registroKpi.activosInicio,
+  // ========= 2) CARGA PARA GRÁFICOS (año de abajo) =========
+  useEffect(() => {
+    const fetchAnio = async () => {
+      setLoadingAnio(true);
+      setErrorAnio("");
+
+      try {
+        const [resNuevos, resUtil, resChurn] = await Promise.all([
+          getKpiNuevosClientesAnio(anioGraficos),
+          getKpiUtilizacionAnio(anioGraficos),
+          getKpiChurnAnio(anioGraficos),
+        ]);
+
+        // ---- Nuevos clientes por mes ----
+        const nuevos = (resNuevos.data || []).map((item) => {
+          const idx = getMonthIndex(item.mes);
+          const info = MESES[idx] || { short: "?", value: idx + 1 };
+          return {
+            mes: info.short,
+            mesNum: info.value,
+            nuevos: item.nuevosClientes ?? 0,
+          };
+        });
+        // Rellenar meses faltantes
+        const completosNuevos = MESES.map((m) => {
+          const found = nuevos.find((n) => n.mesNum === m.value);
+          return (
+            found || {
+              mes: m.short,
+              mesNum: m.value,
+              nuevos: 0,
+            }
+          );
+        });
+        setNuevosPorMes(completosNuevos);
+
+        // ---- Utilización por mes ----
+        const util = (resUtil.data || []).map((item) => {
+          const idx = getMonthIndex(item.mes);
+          const info = MESES[idx] || { short: "?", value: idx + 1 };
+          return {
+            mes: info.short,
+            mesNum: info.value,
+            horasReservadas: item.horasReservadasTotal ?? 0,
+            horasPosibles: item.horasPosibles ?? 0,
+            porcentaje: item.porcentajeUtilizacion ?? 0,
+          };
+        });
+        const completosUtil = MESES.map((m) => {
+          const found = util.find((u) => u.mesNum === m.value);
+          return (
+            found || {
+              mes: m.short,
+              mesNum: m.value,
+              horasReservadas: 0,
+              horasPosibles: 0,
+              porcentaje: 0,
+            }
+          );
+        });
+        setUtilizacionPorMes(completosUtil);
+
+        // ---- Churn por mes ----
+        const churn = (resChurn.data || []).map((item) => {
+          const idx = getMonthIndex(item.mes);
+          const info = MESES[idx] || { short: "?", value: idx + 1 };
+          return {
+            mes: info.short,
+            mesNum: info.value,
+            clientesSeFueron: item.clientesAbandonaron ?? 0,
+            activosInicio: item.clientesActivos ?? 0,
+            churn: item.churnRate ?? 0,
+          };
+        });
+        const completosChurn = MESES.map((m) => {
+          const found = churn.find((c) => c.mesNum === m.value);
+          return (
+            found || {
+              mes: m.short,
+              mesNum: m.value,
+              clientesSeFueron: 0,
+              activosInicio: 0,
+              churn: 0,
+            }
+          );
+        });
+        setChurnPorMes(completosChurn);
+      } catch (err) {
+        console.error("Error al cargar KPIs del año:", err);
+        setErrorAnio("No se pudieron cargar los indicadores del año seleccionado.");
+        setNuevosPorMes([]);
+        setUtilizacionPorMes([]);
+        setChurnPorMes([]);
+      } finally {
+        setLoadingAnio(false);
+      }
+    };
+
+    fetchAnio();
+  }, [anioGraficos]);
+
+  // ========= DERIVADOS (cards y semestres) =========
+  const kpiNuevosMesActual = kpiMes?.nuevosClientes ?? 0;
+  const kpiUtilizacionMesActual = kpiMes?.porcentajeUtilizacion ?? 0;
+
+  const ultimoChurn = {
+    churn: kpiMes?.churnRate ?? 0,
+    clientesSeFueron: kpiMes?.clientesAbandonaron ?? 0,
+    activosInicio: kpiMes?.clientesActivos ?? 0,
   };
 
-  // Datos del año seleccionado para los gráficos
-  const datosAnio = useMemo(
-    () => dataKpiMensual.filter((d) => d.anio === anioGraficos),
-    [anioGraficos]
+  const nuevosPrimerSemestre = useMemo(
+    () => nuevosPorMes.filter((d) => d.mesNum >= 1 && d.mesNum <= 6),
+    [nuevosPorMes]
+  );
+  const nuevosSegundoSemestre = useMemo(
+    () => nuevosPorMes.filter((d) => d.mesNum >= 7 && d.mesNum <= 12),
+    [nuevosPorMes]
   );
 
-  const primerSemestre = datosAnio.filter((d) => d.mesNum >= 1 && d.mesNum <= 6);
-  const segundoSemestre = datosAnio.filter(
-    (d) => d.mesNum >= 7 && d.mesNum <= 12
+  const utilizacionPrimerSemestre = useMemo(
+    () => utilizacionPorMes.filter((d) => d.mesNum >= 1 && d.mesNum <= 6),
+    [utilizacionPorMes]
+  );
+  const utilizacionSegundoSemestre = useMemo(
+    () => utilizacionPorMes.filter((d) => d.mesNum >= 7 && d.mesNum <= 12),
+    [utilizacionPorMes]
   );
 
+  // ========= HANDLERS FILTROS =========
   const handleFiltroKpiChange = (e) => {
     const { name, value } = e.target;
     setFiltrosKpi((f) => ({
@@ -115,7 +262,7 @@ export default function DashboardAdmin() {
     <div className="container mt-4">
       <h2>Dashboard administrativo</h2>
 
-      {/* Filtros superiores (solo tarjetas KPI) */}
+      {/* ===== FILTROS SUPERIORES (MES / AÑO PARA CARDS) ===== */}
       <Row className="mt-3 g-3">
         <Col xs={12} md={3}>
           <Form.Group>
@@ -141,261 +288,288 @@ export default function DashboardAdmin() {
               value={filtrosKpi.anio}
               onChange={handleFiltroKpiChange}
             >
-              {AÑOS_DISPONIBLES.map((a) => (
-                <option key={a} value={a}>
-                  {a}
-                </option>
-              ))}
+              <option value={currentYear - 1}>{currentYear - 1}</option>
+              <option value={currentYear}>{currentYear}</option>
+              <option value={currentYear + 1}>{currentYear + 1}</option>
             </Form.Select>
           </Form.Group>
         </Col>
       </Row>
 
-      {/* Fila de KPIs */}
-      <Row className="mt-3 g-3">
-        {/* KPI Nuevos clientes */}
-        <Col md={4}>
-          <Card className="p-3 shadow-sm">
-            <h6 className="text-muted mb-1">
-              Nuevos clientes (mes actual)
-            </h6>
-            <h3 className="mb-2">{kpiNuevosMesActual}</h3>
-            <small className="text-muted">
-              Basado en la fecha de primer estado “Activo”.
-            </small>
-          </Card>
-        </Col>
+      {/* ===== FILA DE KPIs (MISMO DISEÑO) ===== */}
+      {/* Fila de KPIs (mismo diseño) */}
+<Row className="mt-3 g-3">
+  {/* KPI Nuevos clientes */}
+  <Col md={4}>
+    <Card className="p-3 shadow-sm">
+      <h6 className="text-muted mb-1">Nuevos clientes (mes actual)</h6>
+      {loadingMes ? (
+        <Spinner animation="border" size="sm" />
+      ) : (
+        <h3 className="mb-2">{kpiNuevosMesActual}</h3>
+      )}
+      {errorMes && (
+        <small className="text-danger d-block mb-1">{errorMes}</small>
+      )}
+      <small className="text-muted">
+        Basado en la fecha en que se resgitro en la app.
+      </small>
+    </Card>
+  </Col>
 
-        {/* KPI Utilización recursos */}
-        <Col md={4}>
-          <Card className="p-3 shadow-sm">
-            <h6 className="text-muted mb-1">
-              Utilización de recursos (mes actual)
-            </h6>
-            <h3 className="mb-2">{kpiUtilizacionMesActual}%</h3>
-            <small className="text-muted">
-              Horas reservadas / horas posibles (lunes a viernes).
-            </small>
-          </Card>
-        </Col>
+  {/* KPI Utilización recursos */}
+  <Col md={4}>
+    <Card className="p-3 shadow-sm">
+      <h6 className="text-muted mb-1">
+        Utilización de recursos (mes actual)
+      </h6>
+      {loadingMes ? (
+        <Spinner animation="border" size="sm" />
+      ) : (
+        <h3 className="mb-2">{kpiUtilizacionMesActual}%</h3>
+      )}
+      {errorMes && (
+        <small className="text-danger d-block mb-1">{errorMes}</small>
+      )}
+      <small className="text-muted">
+        Horas reservadas / horas posibles (lunes a viernes).
+      </small>
+    </Card>
+  </Col>
 
-        {/* KPI Churn */}
-        <Col md={4}>
-          <Card className="p-3 shadow-sm">
-            <h6 className="text-muted mb-1">
-              Churn rate (mes actual)
-            </h6>
-            <h3 className="mb-2">{kpiChurnActual.churn}%</h3>
-            <small className="text-muted d-block mb-2">
-              Clientes que se fueron:{" "}
-              <strong>{kpiChurnActual.clientesSeFueron}</strong> / Activos
-              inicio: <strong>{kpiChurnActual.activosInicio}</strong>
-            </small>
-            <Badge bg={kpiChurnActual.churn > 3 ? "danger" : "success"}>
-              {kpiChurnActual.churn > 3 ? "Atención" : "Saludable"}
-            </Badge>
-          </Card>
-        </Col>
-      </Row>
+  {/* KPI Churn */}
+  <Col md={4}>
+    <Card className="p-3 shadow-sm">
+      <h6 className="text-muted mb-1">Churn rate (mes actual)</h6>
+      {loadingMes ? (
+        <Spinner animation="border" size="sm" />
+      ) : (
+        <h3 className="mb-2">{ultimoChurn.churn}%</h3>
+      )}
+      {errorMes && (
+        <small className="text-danger d-block mb-1">{errorMes}</small>
+      )}
+      <small className="text-muted d-block mb-2">
+        Clientes que se fueron:{" "}
+        <strong>{ultimoChurn.clientesSeFueron}</strong> / Activos:{" "}
+        <strong>{ultimoChurn.activosInicio}</strong>
+      </small>
+      <Badge bg={ultimoChurn.churn > 3 ? "danger" : "success"}>
+        {ultimoChurn.churn > 3 ? "Atención" : "Saludable"}
+      </Badge>
+    </Card>
+  </Col>
+</Row>
 
-      {/* Filtro inferior */}
-      <Row className="mt-4 mb-2">
+      {/* ===== FILTRO INFERIOR (AÑO PARA GRÁFICOS) ===== */}
+      <Row className="mt-4 g-3">
         <Col xs={12} md={3}>
           <Form.Group>
             <Form.Label>Año (gráficos)</Form.Label>
-            <Form.Select
-              value={anioGraficos}
-              onChange={handleAnioGraficosChange}
-            >
-              {AÑOS_DISPONIBLES.map((a) => (
-                <option key={a} value={a}>
-                  {a}
-                </option>
-              ))}
+            <Form.Select value={anioGraficos} onChange={handleAnioGraficosChange}>
+              <option value={currentYear - 1}>{currentYear - 1}</option>
+              <option value={currentYear}>{currentYear}</option>
+              <option value={currentYear + 1}>{currentYear + 1}</option>
             </Form.Select>
           </Form.Group>
         </Col>
       </Row>
 
-      {/* Fila 2: Ene-Jun (Nuevos clientes / Utilización) */}
-      <Row className="mt-2 g-3">
-        {/* Nuevos clientes Ene-Jun */}
-        <Col md={6}>
-          <Card className="p-3 shadow-sm">
-            <h5 className="mb-3">
-              Nuevos clientes (Enero - Junio {anioGraficos})
-            </h5>
-            <div style={{ width: "100%", height: 260 }}>
-              <ResponsiveContainer>
-                <BarChart data={primerSemestre}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="mes" />
-                  <YAxis allowDecimals={false} />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="nuevos" name="Nuevos clientes" fill="#198754" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
-        </Col>
+      {loadingAnio && (
+        <div className="d-flex justify-content-center my-4">
+          <Spinner animation="border" />
+        </div>
+      )}
+      {errorAnio && (
+        <Alert variant="danger" className="mt-3">
+          {errorAnio}
+        </Alert>
+      )}
 
-        {/* Utilización Ene-Jun */}
-        <Col md={6}>
-          <Card className="p-3 shadow-sm">
-            <h5 className="mb-3">
-              Utilización de recursos (Enero - Junio {anioGraficos})
-            </h5>
-            <div style={{ width: "100%", height: 260 }}>
-              <ResponsiveContainer>
-                <ComposedChart data={primerSemestre}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="mes" />
-                  <YAxis yAxisId="left" />
-                  <YAxis
-                    yAxisId="right"
-                    orientation="right"
-                    domain={[0, 100]}
-                    tickFormatter={(v) => `${v}%`}
-                  />
-                  <Tooltip />
-                  <Legend />
-                  <Bar
-                    yAxisId="left"
-                    dataKey="horasReservadas"
-                    name="Horas reservadas"
-                    fill="#0d6efd"
-                  />
-                  <Bar
-                    yAxisId="left"
-                    dataKey="horasPosibles"
-                    name="Horas posibles"
-                    fill="#6c757d"
-                  />
-                  <Line
-                    yAxisId="right"
-                    type="monotone"
-                    dataKey="porcentaje"
-                    name="% Utilización"
-                    stroke="#20c997"
-                    strokeWidth={2}
-                    dot={{ r: 3 }}
-                  />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
-        </Col>
-      </Row>
+      {!loadingAnio && !errorAnio && (
+        <>
+          {/* Fila 2: Ene-Jun (Nuevos clientes / Utilización) */}
+          <Row className="mt-4 g-3">
+            {/* Nuevos clientes Ene-Jun */}
+            <Col md={6}>
+              <Card className="p-3 shadow-sm">
+                <h5 className="mb-3">
+                  Nuevos clientes (Enero - Junio {anioGraficos})
+                </h5>
+                <div style={{ width: "100%", height: 260 }}>
+                  <ResponsiveContainer>
+                    <BarChart data={nuevosPrimerSemestre}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="mes" />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="nuevos" name="Nuevos clientes" fill="#198754" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </Card>
+            </Col>
 
-      <Row className="mt-4 g-3">
-        {/* Nuevos clientes Jul-Dic */}
-        <Col md={6}>
-          <Card className="p-3 shadow-sm">
-            <h5 className="mb-3">
-              Nuevos clientes (Julio - Diciembre {anioGraficos})
-            </h5>
-            <div style={{ width: "100%", height: 260 }}>
-              <ResponsiveContainer>
-                <BarChart data={segundoSemestre}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="mes" />
-                  <YAxis allowDecimals={false} />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="nuevos" name="Nuevos clientes" fill="#198754" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
-        </Col>
+            {/* Utilización Ene-Jun */}
+            <Col md={6}>
+              <Card className="p-3 shadow-sm">
+                <h5 className="mb-3">
+                  Utilización de recursos (Enero - Junio {anioGraficos})
+                </h5>
+                <div style={{ width: "100%", height: 260 }}>
+                  <ResponsiveContainer>
+                    <ComposedChart data={utilizacionPrimerSemestre}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="mes" />
+                      <YAxis yAxisId="left" />
+                      <YAxis
+                        yAxisId="right"
+                        orientation="right"
+                        domain={[0, 100]}
+                        tickFormatter={(v) => `${v}%`}
+                      />
+                      <Tooltip />
+                      <Legend />
+                      <Bar
+                        yAxisId="left"
+                        dataKey="horasReservadas"
+                        name="Horas reservadas"
+                        fill="#0d6efd"
+                      />
+                      <Bar
+                        yAxisId="left"
+                        dataKey="horasPosibles"
+                        name="Horas posibles"
+                        fill="#6c757d"
+                      />
+                      <Line
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="porcentaje"
+                        name="% Utilización"
+                        stroke="#20c997"
+                        strokeWidth={2}
+                        dot={{ r: 3 }}
+                      />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              </Card>
+            </Col>
+          </Row>
 
-        {/* Utilización Jul-Dic */}
-        <Col md={6}>
-          <Card className="p-3 shadow-sm">
-            <h5 className="mb-3">
-              Utilización de recursos (Julio - Diciembre {anioGraficos})
-            </h5>
-            <div style={{ width: "100%", height: 260 }}>
-              <ResponsiveContainer>
-                <ComposedChart data={segundoSemestre}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="mes" />
-                  <YAxis yAxisId="left" />
-                  <YAxis
-                    yAxisId="right"
-                    orientation="right"
-                    domain={[0, 100]}
-                    tickFormatter={(v) => `${v}%`}
-                  />
-                  <Tooltip />
-                  <Legend />
-                  <Bar
-                    yAxisId="left"
-                    dataKey="horasReservadas"
-                    name="Horas reservadas"
-                    fill="#11664cff"
-                  />
-                  <Bar
-                    yAxisId="left"
-                    dataKey="horasPosibles"
-                    name="Horas posibles"
-                    fill="#8cb68eff"
-                  />
-                  <Line
-                    yAxisId="right"
-                    type="monotone"
-                    dataKey="porcentaje"
-                    name="% Utilización"
-                    stroke="#d16e34ff"
-                    strokeWidth={2}
-                    dot={{ r: 3 }}
-                  />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
-        </Col>
-      </Row>
+          {/* Fila 3: Jul-Dic (Nuevos clientes / Utilización) */}
+          <Row className="mt-4 g-3">
+            {/* Nuevos clientes Jul-Dic */}
+            <Col md={6}>
+              <Card className="p-3 shadow-sm">
+                <h5 className="mb-3">
+                  Nuevos clientes (Julio - Diciembre {anioGraficos})
+                </h5>
+                <div style={{ width: "100%", height: 260 }}>
+                  <ResponsiveContainer>
+                    <BarChart data={nuevosSegundoSemestre}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="mes" />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="nuevos" name="Nuevos clientes" fill="#198754" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </Card>
+            </Col>
 
-      {/* Churn anual */}
-      <Row className="mt-4 g-3">
-        <Col md={12}>
-          <Card className="p-3 shadow-sm">
-            <h5 className="mb-3">
-              Churn rate por mes (Enero - Diciembre {anioGraficos})
-            </h5>
-            <div style={{ width: "100%", height: 260 }}>
-              <ResponsiveContainer>
-                <LineChart data={datosAnio}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="mes" />
-                  <YAxis
-                    domain={[0, "auto"]}
-                    tickFormatter={(v) => `${v}%`}
-                  />
-                  <Tooltip
-                    formatter={(value, name) =>
-                      name === "churn"
-                        ? [`${value}%`, "Churn"]
-                        : [value, name]
-                    }
-                  />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="churn"
-                    name="Churn %"
-                    stroke="#d16e34ff"
-                    strokeWidth={2}
-                    dot={{ r: 3 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
-        </Col>
-      </Row>
+            {/* Utilización Jul-Dic */}
+            <Col md={6}>
+              <Card className="p-3 shadow-sm">
+                <h5 className="mb-3">
+                  Utilización de recursos (Julio - Diciembre {anioGraficos})
+                </h5>
+                <div style={{ width: "100%", height: 260 }}>
+                  <ResponsiveContainer>
+                    <ComposedChart data={utilizacionSegundoSemestre}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="mes" />
+                      <YAxis yAxisId="left" />
+                      <YAxis
+                        yAxisId="right"
+                        orientation="right"
+                        domain={[0, 100]}
+                        tickFormatter={(v) => `${v}%`}
+                      />
+                      <Tooltip />
+                      <Legend />
+                      <Bar
+                        yAxisId="left"
+                        dataKey="horasReservadas"
+                        name="Horas reservadas"
+                        fill="#0d6efd"
+                      />
+                      <Bar
+                        yAxisId="left"
+                        dataKey="horasPosibles"
+                        name="Horas posibles"
+                        fill="#6c757d"
+                      />
+                      <Line
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="porcentaje"
+                        name="% Utilización"
+                        stroke="#20c997"
+                        strokeWidth={2}
+                        dot={{ r: 3 }}
+                      />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              </Card>
+            </Col>
+          </Row>
+
+          {/* Fila 4: Churn anual */}
+          <Row className="mt-4 g-3">
+            <Col md={12}>
+              <Card className="p-3 shadow-sm">
+                <h5 className="mb-3">
+                  Churn rate por mes (Enero - Diciembre {anioGraficos})
+                </h5>
+                <div style={{ width: "100%", height: 260 }}>
+                  <ResponsiveContainer>
+                    <LineChart data={churnPorMes}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="mes" />
+                      <YAxis
+                        domain={[0, "auto"]}
+                        tickFormatter={(v) => `${v}%`}
+                      />
+                      <Tooltip
+                        formatter={(value, name) =>
+                          name === "churn"
+                            ? [`${value}%`, "Churn"]
+                            : [value, name]
+                        }
+                      />
+                      <Legend />
+                      <Line
+                        type="monotone"
+                        dataKey="churn"
+                        name="Churn %"
+                        stroke="#dc3545"
+                        strokeWidth={2}
+                        dot={{ r: 3 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </Card>
+            </Col>
+          </Row>
+        </>
+      )}
     </div>
   );
 }
