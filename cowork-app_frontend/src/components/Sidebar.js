@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { FaUserFriends, FaCalendarAlt, FaDoorOpen,FaChevronDown, FaHome,FaCreditCard,FaChartPie,FaFileInvoiceDollar, } from "react-icons/fa";
+import { FaUserFriends, FaCalendarAlt, FaDoorOpen,FaChevronDown, FaHome,FaCreditCard,FaChartPie,FaFileInvoiceDollar,FaTachometerAlt } from "react-icons/fa";
 import { useState } from "react";
 import "./Sidebar.css";
 import { useAuth } from "../context/AuthContext";
@@ -202,6 +202,20 @@ function Sidebar() {
           >
             <FaFileInvoiceDollar className="me-2" />
             Historial facturación
+          </Link>
+        </li>
+      )}
+      {/* Dashboard admin: solo Admin */}
+      {role === "ADMIN" && (
+        <li className="mb-2">
+          <Link
+            to="/dashboard-admin"
+            className={`nav-link text-white ${
+              location.pathname === "/dashboard-admin" ? "active" : ""
+            }`}
+          >
+            <FaTachometerAlt className="me-2" />
+            Dashboard admin
           </Link>
         </li>
       )}

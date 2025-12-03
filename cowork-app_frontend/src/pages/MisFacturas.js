@@ -154,8 +154,6 @@ export default function MisFacturas() {
                 {selectedFactura.descripcion || "Sin descripción adicional."}
                 </p>
 
-                {/* Si tu DTO tiene más campos, los puedes ir agregando aquí */}
-                {/* Ejemplos: periodo, plan asociado, método de pago, etc. */}
             </>
             )}
         </Modal.Body>

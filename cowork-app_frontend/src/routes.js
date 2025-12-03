@@ -12,6 +12,7 @@ import MiPlan from "./pages/MiPlan";
 import MisFacturas from "./pages/MisFacturas";
 import Planes from "./pages/Planes";
 import HistorialFacturacion from "./pages/HistorialFacturacion";
+import DashboardAdmin from "./pages/DashboardAdmin";
 
 
 function PrivateLayout() {
@@ -129,6 +130,16 @@ function AppRoutes() {
               </ProtectedRoute>
             }
           />
+          {/* Dashboard admin: solo ADMIN */}
+          <Route
+            path="/dashboard-admin"
+            element={
+              <ProtectedRoute allowedRoles={["ADMIN"]}>
+                <DashboardAdmin />
+              </ProtectedRoute>
+            }
+          />
+
         </Route>
       </Routes>
     </Router>
