@@ -80,15 +80,15 @@ export default function ReservasCrear() {
             r.inicioReserva.startsWith(formData.fecha)
         );
 
-        // Generamos bloques de 09:00 a 18:00
-        const bloques = [];
-        for (let hora = 9; hora < 18; hora++) {
+        // Generamos bloques de 09:00 a 21:00
+      const bloques = [];
+      for (let hora = 9; hora < 21; hora++) {   // 👈 igual: 18 → 21
         bloques.push({
-            inicio: `${hora.toString().padStart(2, "0")}:00`,
-            fin: `${(hora + 1).toString().padStart(2, "0")}:00`,
-            ocupado: false,
+          inicio: `${hora.toString().padStart(2, "0")}:00`,
+          fin: `${(hora + 1).toString().padStart(2, "0")}:00`,
+          ocupado: false,
         });
-        }
+      }
 
         // Convertimos reservas en horas ocupadas (por cada bloque)
         const ocupados = reservasDelDia.map((r) => {
@@ -111,7 +111,6 @@ export default function ReservasCrear() {
 
 
   const handleSave = async () => {
-    // 👇 Para CLIENTE, el usuario SIEMPRE es el currentUser
     const usuarioId = currentUser?.id;
 
     if (!usuarioId || !formData.recurso.id || !formData.horaInicio) {
@@ -147,10 +146,10 @@ export default function ReservasCrear() {
     }
 
     const payload = {
-      usuarioId, // 👈 SIEMPRE EL currentUser
+      usuarioId, 
       recursoId: formData.recurso.id,
-      inicioReserva: inicioReserva.toISOString(),
-      terminoReserva: terminoReserva.toISOString(),
+      inicioReserva: inicioReservaStr,
+      terminoReserva: terminoReservaStr,
       valor: formData.recurso.precio,
       estadoReservaId: estadoActiva?.id || 1,
     };
@@ -173,6 +172,11 @@ export default function ReservasCrear() {
       alert("No se pudo crear la reserva. Verifique los datos o la conexión.");
     }
   };
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+
+  const manana = new Date(hoy);
+  manana.setDate(hoy.getDate() + 1);
 
   return (
     <div className="container mt-4">
@@ -204,53 +208,53 @@ export default function ReservasCrear() {
 
         {/* Fecha */}
         <Form.Group className="mb-3">
-          <Form.Label>Fecha</Form.Label>
+        <Form.Label>Fecha</Form.Label>
 
-          <DatePicker
-            selected={
-              formData.fecha
-                ? (() => {
-                    const [y, m, d] = formData.fecha.split("-").map(Number);
-                    return new Date(y, m - 1, d); // 👈 local, sin lío de UTC
-                  })()
-                : null
-            }
-            onChange={(date) => {
-              if (!date) {
-                setFormData((f) => ({
-                  ...f,
-                  fecha: "",
-                  horaInicio: "",
-                  horaFin: "",
-                }));
-                setBloquesDisponibles([]);
-                return;
-              }
-
-              // ✅ Formatear a YYYY-MM-DD en base a la fecha local
-              const year = date.getFullYear();
-              const month = String(date.getMonth() + 1).padStart(2, "0");
-              const day = String(date.getDate()).padStart(2, "0");
-              const yyyyMmDd = `${year}-${month}-${day}`;
-
+        <DatePicker
+          selected={
+            formData.fecha
+              ? (() => {
+                  const [y, m, d] = formData.fecha.split("-").map(Number);
+                  return new Date(y, m - 1, d); // fecha local
+                })()
+              : null
+          }
+          onChange={(date) => {
+            if (!date) {
               setFormData((f) => ({
                 ...f,
-                fecha: yyyyMmDd,
+                fecha: "",
                 horaInicio: "",
                 horaFin: "",
               }));
-            }}
-            dateFormat="yyyy-MM-dd"
-            placeholderText="Seleccione una fecha"
-            className="form-control"
-            // 🔒 Aquí se deshabilitan sábados (6) y domingos (0)
-            filterDate={(date) => {
-              const day = date.getDay();
-              return day !== 0 && day !== 6; // solo deja lunes–viernes
-            }}
-            calendarStartDay={1}
-          />
-        </Form.Group>
+              setBloquesDisponibles([]);
+              return;
+            }
+
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, "0");
+            const day = String(date.getDate()).padStart(2, "0");
+            const yyyyMmDd = `${year}-${month}-${day}`;
+
+            setFormData((f) => ({
+              ...f,
+              fecha: yyyyMmDd,
+              horaInicio: "",
+              horaFin: "",
+            }));
+          }}
+          dateFormat="yyyy-MM-dd"
+          placeholderText="Seleccione una fecha"
+          className="form-control"
+          minDate={manana}                        
+          filterDate={(date) => {
+            const day = date.getDay();
+            // solo lunes–viernes Y solo fechas futuras 
+            return day !== 0 && day !== 6;
+          }}
+          calendarStartDay={1}
+        />
+      </Form.Group>
 
         {/* Bloques horarios */}
         {bloquesDisponibles.length > 0 && (
