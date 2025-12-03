@@ -263,10 +263,6 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- 3. FUNCIÓN: Tasa de churn en un período
-/* Corrección: antes se contaban como activos todos los usuarios activos HOY,
-lo que daba el mismo número de activos cada mes y distorsionaba el churn.
-Ahora se reconstruye el último estado del usuario antes de fecha_inicio,
-para contar solo quienes realmente estaban activos al inicio del período. */
 CREATE OR REPLACE FUNCTION reservas.kpi_churn_rate(
     fecha_inicio DATE,
     fecha_fin DATE
@@ -290,17 +286,26 @@ BEGIN
     ultimo_estado AS (
         SELECT
             u.id AS usuario_id,
-            COALESCE(
-                (
-                    SELECT e.estado_usuario_id
-                    FROM reservas.kpi_cambios_estado e
-                    WHERE e.usuario_id = u.id
-                      AND e.fecha_cambio_estado < fecha_inicio
-                    ORDER BY e.fecha_cambio_estado DESC
-                    LIMIT 1
-                ),
-                u.estado_usuario_id
-            ) AS estado_inicio
+            u.fecha_creacion,
+            CASE
+                -- Si el usuario fue creado DESPUÉS del inicio del período,
+                -- no existía aún, no se considera en la base.
+                WHEN u.fecha_creacion > fecha_inicio THEN NULL
+                ELSE COALESCE(
+                    (
+                        -- Último estado conocido ANTES o EN fecha_inicio
+                        SELECT h.estado_usuario_id
+                        FROM reservas.historial_estado_usuario h
+                        WHERE h.usuario_id = u.id
+                          AND h.fecha_cambio_estado <= fecha_inicio
+                        ORDER BY h.fecha_cambio_estado DESC
+                        LIMIT 1
+                    ),
+                    -- Si no tiene historial, asumimos su estado actual
+                    -- como estado inicial (desde fecha_creacion hacia atrás).
+                    u.estado_usuario_id
+                )
+            END AS estado_inicio
         FROM reservas.usuario u
     ),
 
