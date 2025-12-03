@@ -3,6 +3,7 @@ import { Form, Button, Card, Row, Col } from "react-bootstrap";
 import { getAllRecursos } from "../services/recursoService";
 import { getAllReservas, createReserva } from "../services/reservaService";
 import { getAllEstadosReserva } from "../services/estadoReservaService";
+import { getHorasRestantes } from "../services/usuarioService";
 import { useAuth } from "../context/AuthContext"; 
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -82,7 +83,7 @@ export default function ReservasCrear() {
 
         // Generamos bloques de 09:00 a 21:00
       const bloques = [];
-      for (let hora = 9; hora < 21; hora++) {   // 👈 igual: 18 → 21
+      for (let hora = 9; hora < 21; hora++) {   
         bloques.push({
           inicio: `${hora.toString().padStart(2, "0")}:00`,
           fin: `${(hora + 1).toString().padStart(2, "0")}:00`,
@@ -117,6 +118,7 @@ export default function ReservasCrear() {
       alert("⚠️ Debes seleccionar recurso, fecha y horario.");
       return;
     }
+
     // 🔒 Seguridad: evitar fines de semana
     const [y, m, d] = formData.fecha.split("-").map(Number);
     const diaSemana = new Date(y, m - 1, d).getDay();
@@ -145,8 +147,25 @@ export default function ReservasCrear() {
       return;
     }
 
+    // 🔍 Consultar horas restantes del plan ANTES de crear la reserva
+    try {
+      const resHoras = await getHorasRestantes(usuarioId);
+      const horasRestantes = resHoras.data?.horasRestantes;
+
+      if (horasRestantes !== undefined && horasRestantes <= 0) {
+        alert(
+          "⚠️ Ya no te quedan horas disponibles en tu plan. " +
+            "Esta reserva se cobrará como monto extra."
+        );
+        // No retornamos aquí: dejamos que la reserva se cree igualmente
+      }
+    } catch (err) {
+      console.error("Error al consultar horas restantes:", err);
+      // Si falla esta consulta, no bloqueamos la reserva, solo seguimos.
+    }
+
     const payload = {
-      usuarioId, 
+      usuarioId,
       recursoId: formData.recurso.id,
       inicioReserva: inicioReservaStr,
       terminoReserva: terminoReservaStr,

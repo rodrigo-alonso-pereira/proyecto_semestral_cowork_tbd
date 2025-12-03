@@ -16,6 +16,22 @@ import { getAllUsuarios } from "../services/usuarioService";
 import { getAllEstadosFactura } from "../services/estadoFacturaService";
 import { FaEdit } from "react-icons/fa";
 
+/**
+ * Helper: parsea una fecha ISO "YYYY-MM-DD" o "YYYY-MM-DDTHH:mm:ss"
+ * sin aplicar zona horaria, solo como texto.
+ */
+const parseFechaISO = (iso) => {
+  if (!iso) return null;
+  const [ymd] = iso.split("T");
+  const [year, month, day] = ymd.split("-").map(Number);
+  return {
+    year,
+    month,
+    day,
+    ymd, // string YYYY-MM-DD
+  };
+};
+
 export default function HistorialFacturacion() {
   const [facturas, setFacturas] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
@@ -51,9 +67,14 @@ export default function HistorialFacturacion() {
           getAllEstadosFactura(),
         ]);
 
-        const ordenadas = [...resFacturas.data].sort(
-          (a, b) => new Date(b.fechaEmision) - new Date(a.fechaEmision)
-        );
+        // Ordenar por fechaEmision DESC usando el string YYYY-MM-DD
+        const ordenadas = [...resFacturas.data].sort((a, b) => {
+          const pa = parseFechaISO(a.fechaEmision);
+          const pb = parseFechaISO(b.fechaEmision);
+          if (!pa || !pb) return 0;
+          return pb.ymd.localeCompare(pa.ymd); // más reciente primero
+        });
+
         setFacturas(ordenadas);
         setUsuarios(resUsuarios.data || []);
         setEstadosFactura(resEstados.data || []);
@@ -70,8 +91,15 @@ export default function HistorialFacturacion() {
     cargar();
   }, []);
 
-  const formatearFecha = (iso) =>
-    iso ? new Date(iso).toLocaleDateString("es-CL") : "-";
+  const formatearFecha = (iso) => {
+    const partes = parseFechaISO(iso);
+    if (!partes) return "-";
+    const { day, month, year } = partes;
+    return `${String(day).padStart(2, "0")}-${String(month).padStart(
+      2,
+      "0"
+    )}-${year}`;
+  };
 
   const formatearTotal = (valor) =>
     typeof valor === "number"
@@ -91,18 +119,17 @@ export default function HistorialFacturacion() {
     setFiltros((f) => ({ ...f, [name]: value }));
   };
 
-  // Años disponibles en base a las facturas
+  // Años disponibles en base a las facturas (sin new Date)
   const aniosDisponibles = useMemo(() => {
     const set = new Set();
     facturas.forEach((f) => {
-      if (f.fechaEmision) {
-        set.add(new Date(f.fechaEmision).getFullYear());
-      }
+      const partes = parseFechaISO(f.fechaEmision);
+      if (partes) set.add(partes.year);
     });
     return Array.from(set).sort((a, b) => b - a);
   }, [facturas]);
 
-  // Facturas filtradas por usuario, mes, año
+  // Facturas filtradas por usuario, mes, año (sin new Date)
   const facturasFiltradas = useMemo(() => {
     let res = [...facturas];
 
@@ -114,18 +141,16 @@ export default function HistorialFacturacion() {
     if (filtros.mes !== "TODOS") {
       const mesNum = Number(filtros.mes);
       res = res.filter((f) => {
-        if (!f.fechaEmision) return false;
-        const fecha = new Date(f.fechaEmision);
-        return fecha.getMonth() + 1 === mesNum;
+        const partes = parseFechaISO(f.fechaEmision);
+        return partes && partes.month === mesNum;
       });
     }
 
     if (filtros.anio !== "TODOS") {
       const anioNum = Number(filtros.anio);
       res = res.filter((f) => {
-        if (!f.fechaEmision) return false;
-        const fecha = new Date(f.fechaEmision);
-        return fecha.getFullYear() === anioNum;
+        const partes = parseFechaISO(f.fechaEmision);
+        return partes && partes.year === anioNum;
       });
     }
 
@@ -158,33 +183,36 @@ export default function HistorialFacturacion() {
 
   const guardarCambioEstado = async () => {
     if (!facturaEstadoSeleccionada || !nuevoEstadoId) {
-        alert("Debes seleccionar un estado.");
-        return;
+      alert("Debes seleccionar un estado.");
+      return;
     }
 
     try {
-        await updateFacturaEstado(
+      await updateFacturaEstado(
         facturaEstadoSeleccionada.id,
         Number(nuevoEstadoId)
-        );
+      );
 
-        alert("✅ Estado de la factura actualizado correctamente.");
+      alert("✅ Estado de la factura actualizado correctamente.");
 
-        // recargar facturas
-        const res = await getAllFacturas();
-        const ordenadas = [...res.data].sort(
-        (a, b) => new Date(b.fechaEmision) - new Date(a.fechaEmision)
-        );
-        setFacturas(ordenadas);
-        cerrarModalEstado();
+      // Recargar facturas y volver a ordenar por fechaEmision DESC
+      const res = await getAllFacturas();
+      const ordenadas = [...res.data].sort((a, b) => {
+        const pa = parseFechaISO(a.fechaEmision);
+        const pb = parseFechaISO(b.fechaEmision);
+        if (!pa || !pb) return 0;
+        return pb.ymd.localeCompare(pa.ymd);
+      });
+      setFacturas(ordenadas);
+      cerrarModalEstado();
     } catch (err) {
-        console.error(
+      console.error(
         "Error al actualizar estado de factura:",
         err.response?.data || err.message
-        );
-        alert("No se pudo actualizar el estado. Intenta más tarde.");
+      );
+      alert("No se pudo actualizar el estado. Intenta más tarde.");
     }
-    };
+  };
 
   return (
     <div className="container mt-4">
@@ -284,7 +312,6 @@ export default function HistorialFacturacion() {
             <Table hover responsive className="mt-2">
               <thead>
                 <tr>
-                  <th>#</th>
                   <th>N° factura</th>
                   <th>Usuario</th>
                   <th>Fecha emisión</th>
@@ -294,9 +321,8 @@ export default function HistorialFacturacion() {
                 </tr>
               </thead>
               <tbody>
-                {facturasFiltradas.map((f, idx) => (
+                {facturasFiltradas.map((f) => (
                   <tr key={f.id}>
-                    <td>{idx + 1}</td>
                     <td>{f.numeroFactura}</td>
                     <td>{f.usuarioNombre}</td>
                     <td>{formatearFecha(f.fechaEmision)}</td>
@@ -326,11 +352,7 @@ export default function HistorialFacturacion() {
             </Table>
 
             {/* Modal detalle factura */}
-            <Modal
-              show={showModalDetalle}
-              onHide={cerrarModalDetalle}
-              centered
-            >
+            <Modal show={showModalDetalle} onHide={cerrarModalDetalle} centered>
               <Modal.Header closeButton>
                 <Modal.Title>Detalle de factura</Modal.Title>
               </Modal.Header>
@@ -375,11 +397,7 @@ export default function HistorialFacturacion() {
             </Modal>
 
             {/* Modal cambio de estado */}
-            <Modal
-              show={showModalEstado}
-              onHide={cerrarModalEstado}
-              centered
-            >
+            <Modal show={showModalEstado} onHide={cerrarModalEstado} centered>
               <Modal.Header closeButton>
                 <Modal.Title>Cambiar estado de factura</Modal.Title>
               </Modal.Header>
@@ -401,11 +419,17 @@ export default function HistorialFacturacion() {
                         onChange={(e) => setNuevoEstadoId(e.target.value)}
                       >
                         <option value="">Seleccione estado</option>
-                        {estadosFactura.map((e) => (
-                          <option key={e.id} value={e.id}>
-                            {e.nombre}
-                          </option>
-                        ))}
+                        {estadosFactura
+                          .filter(
+                            (e) =>
+                              e.id !== 5 &&
+                              !(e.nombre || "").toLowerCase().includes("elimin")
+                          )
+                          .map((e) => (
+                            <option key={e.id} value={e.id}>
+                              {e.nombre}
+                            </option>
+                          ))}
                       </Form.Select>
                     </Form.Group>
                   </>

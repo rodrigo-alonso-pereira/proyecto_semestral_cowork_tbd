@@ -37,8 +37,8 @@ export default function ReservasAdmin() {
     try {
       const res = await getAllReservas();
       const activas = res.data
-        .filter((r) => r.estadoReservaId !== 3) // 3 = cancelada/eliminada
-        .sort((a, b) => a.id - b.id);
+        .filter((r) => r.estadoReservaId !== 4) // 4 = eliminada
+        .sort((a, b) => new Date(b.inicioReserva) - new Date(a.inicioReserva));
       setReservas(activas);
     } catch (error) {
       console.error("❌ Error al cargar reservas:", error);
@@ -131,7 +131,7 @@ export default function ReservasAdmin() {
         inicioReserva: selectedReserva.inicioReserva,
         terminoReserva: selectedReserva.terminoReserva,
         valor: selectedReserva.valor,
-        estadoReservaId: 3, // 3 = Cancelada / Eliminada
+        estadoReservaId: 4, // 4 = Eliminada
       };
 
       await updateReserva(selectedReserva.id, payload);
@@ -204,17 +204,22 @@ export default function ReservasAdmin() {
               <Form.Select
                 value={formData.estadoReserva?.id || ""}
                 onChange={(e) => {
-                  const sel = estadosReserva.find((t) => t.id === Number(e.target.value));
+                  const sel = estadosReserva.find(
+                    (t) => t.id === Number(e.target.value)
+                  );
                   setFormData((f) => ({ ...f, estadoReserva: sel }));
                 }}
               >
                 <option value="">Seleccione estado</option>
-                {estadosReserva.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.nombre}
-                  </option>
-                ))}
+                {estadosReserva
+                  .filter((e) => e.id !== 4)   
+                  .map((e) => (
+                    <option key={e.id} value={e.id}>
+                      {e.nombre}
+                    </option>
+                  ))}
               </Form.Select>
+
             </Form.Group>
           </Form>
         </Modal.Body>

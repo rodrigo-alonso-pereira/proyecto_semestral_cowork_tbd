@@ -298,68 +298,77 @@ export default function DashboardAdmin() {
 
       {/* ===== FILA DE KPIs (MISMO DISEÑO) ===== */}
       {/* Fila de KPIs (mismo diseño) */}
-<Row className="mt-3 g-3">
-  {/* KPI Nuevos clientes */}
-  <Col md={4}>
-    <Card className="p-3 shadow-sm">
-      <h6 className="text-muted mb-1">Nuevos clientes (mes actual)</h6>
-      {loadingMes ? (
-        <Spinner animation="border" size="sm" />
-      ) : (
-        <h3 className="mb-2">{kpiNuevosMesActual}</h3>
-      )}
-      {errorMes && (
-        <small className="text-danger d-block mb-1">{errorMes}</small>
-      )}
-      <small className="text-muted">
-        Basado en la fecha en que se resgitro en la app.
-      </small>
-    </Card>
-  </Col>
+      <Row className="mt-3 g-3">
+        {/* KPI Nuevos clientes */}
+        <Col md={4}>
+          <Card className="p-3 shadow-sm">
+            <h6 className="text-muted mb-1">Nuevos clientes (mes actual)</h6>
+            {loadingMes ? (
+              <Spinner animation="border" size="sm" />
+            ) : (
+              <h3 className="mb-2">{kpiNuevosMesActual}</h3>
+            )}
+            {errorMes && (
+              <small className="text-danger d-block mb-1">{errorMes}</small>
+            )}
+            <small className="text-muted">
+              Basado en la fecha en que se resgitro en la app.
+            </small>
+          </Card>
+        </Col>
 
-  {/* KPI Utilización recursos */}
-  <Col md={4}>
-    <Card className="p-3 shadow-sm">
-      <h6 className="text-muted mb-1">
-        Utilización de recursos (mes actual)
-      </h6>
-      {loadingMes ? (
-        <Spinner animation="border" size="sm" />
-      ) : (
-        <h3 className="mb-2">{kpiUtilizacionMesActual}%</h3>
-      )}
-      {errorMes && (
-        <small className="text-danger d-block mb-1">{errorMes}</small>
-      )}
-      <small className="text-muted">
-        Horas reservadas / horas posibles (lunes a viernes).
-      </small>
-    </Card>
-  </Col>
+        {/* KPI Utilización recursos */}
+        <Col md={4}>
+          <Card className="p-3 shadow-sm">
+            <h6 className="text-muted mb-1">
+              Utilización de recursos (mes actual)
+            </h6>
+            {loadingMes ? (
+              <Spinner animation="border" size="sm" />
+            ) : (
+              <h3 className="mb-2">{kpiUtilizacionMesActual}%</h3>
+            )}
+            {errorMes && (
+              <small className="text-danger d-block mb-1">{errorMes}</small>
+            )}
+            <small className="text-muted">
+              Horas reservadas / horas posibles (lunes a viernes).
+            </small>
+          </Card>
+        </Col>
 
-  {/* KPI Churn */}
-  <Col md={4}>
-    <Card className="p-3 shadow-sm">
-      <h6 className="text-muted mb-1">Churn rate (mes actual)</h6>
-      {loadingMes ? (
-        <Spinner animation="border" size="sm" />
-      ) : (
-        <h3 className="mb-2">{ultimoChurn.churn}%</h3>
-      )}
-      {errorMes && (
-        <small className="text-danger d-block mb-1">{errorMes}</small>
-      )}
-      <small className="text-muted d-block mb-2">
-        Clientes que se fueron:{" "}
-        <strong>{ultimoChurn.clientesSeFueron}</strong> / Activos:{" "}
-        <strong>{ultimoChurn.activosInicio}</strong>
-      </small>
-      <Badge bg={ultimoChurn.churn > 3 ? "danger" : "success"}>
-        {ultimoChurn.churn > 3 ? "Atención" : "Saludable"}
-      </Badge>
-    </Card>
-  </Col>
-</Row>
+        {/* KPI Churn */}
+          <Col md={4}>
+            <Card className="p-3 shadow-sm">
+              <h6 className="text-muted mb-1">Churn rate (mes actual)</h6>
+              {loadingMes ? (
+                <Spinner animation="border" size="sm" />
+              ) : (
+                <h3 className="mb-2">{ultimoChurn.churn}%</h3>
+              )}
+              {errorMes && (
+                <small className="text-danger d-block mb-1">{errorMes}</small>
+              )}
+
+              {/* Texto + badge en la misma fila */}
+              <small className="text-muted d-flex justify-content-between align-items-center">
+                <span>
+                  Clientes que se fueron:{" "}
+                  <strong>{ultimoChurn.clientesSeFueron}</strong> / Activos:{" "}
+                  <strong>{ultimoChurn.activosInicio}</strong>
+                </span>
+
+                <Badge
+                  bg={ultimoChurn.churn > 3 ? "danger" : "success"}
+                  className="ms-2"
+                >
+                  {ultimoChurn.churn > 3 ? "Atención" : "Saludable"}
+                </Badge>
+              </small>
+            </Card>
+          </Col>
+
+      </Row>
 
       {/* ===== FILTRO INFERIOR (AÑO PARA GRÁFICOS) ===== */}
       <Row className="mt-4 g-3">
