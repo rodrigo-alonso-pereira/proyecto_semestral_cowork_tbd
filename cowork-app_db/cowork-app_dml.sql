@@ -168,7 +168,8 @@ INSERT INTO reservas.Usuario (Id, Rut, Nombre, Password, Email, Fecha_creacion, 
 (97, '00000097-7', 'Cliente 097', 'pwd', 'cliente097@mail.com', '2025-12-22', 1, 3, 2),
 (98, '00000098-8', 'Cliente 098', 'pwd', 'cliente098@mail.com', '2025-12-23', 1, 3, 3),
 (99, '00000099-9', 'Cliente 099', 'pwd', 'cliente099@mail.com', '2025-12-24', 1, 3, 4),
-(100, '00000100-0', 'Cliente 100', 'pwd', 'cliente100@mail.com', '2025-12-05', 1, 3, 1);
+(100, '00000100-0', 'Cliente 100', 'pwd', 'cliente100@mail.com', '2025-12-05', 1, 3, 1),
+(101, '11111111-1', 'Admin', 'pwd', 'admin@mail.com', '2025-01-01', 1, 1, NULL);
 
 -- Insert historial clientes
 INSERT INTO reservas.Historial_Estado_Usuario (Id, Usuario_id, Fecha_cambio_estado, Estado_usuario_id) VALUES 
